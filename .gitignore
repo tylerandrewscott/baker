@@ -1,0 +1,83 @@
+# Compiled source #
+###################
+*.com
+*.class
+*.dll
+*.exe
+*.o
+*.so
+
+# Packages #
+############
+# it's better to unpack these files and commit the raw source
+# git has its own built in compression methods
+*.7z
+*.dmg
+*.gz
+*.iso
+*.jar
+*.rar
+*.tar
+*.zip
+
+# Logs and databases #
+######################
+*.log
+*.sql
+*.sqlite
+
+# OS generated files #
+######################
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+
+# History files
+.Rhistory
+.Rapp.history
+
+# Example code in package build process
+*-Ex.R
+
+# RStudio files
+.Rproj.user/
+
+# produced vignettes
+vignettes/*.html
+vignettes/*.pdf
+
+
+#doc files
+Input/pdfs/raw/.*
+*.docx
+*.doc
+*.gdoc
+*.gsheet
+*.ppt
+*.pptx
+*.gslides
+
+
+#
+network_methods/*
+sna_policy_research/*
+Scraps/*
+Scraps/*.gdoc
+Deliverables/*.docx
+Deliverables/*.gdoc
+
+*.Rhistory
+Icon*
+*/Icon
+.Rproj.user
+
+Code/alchemyapi_python
+Code/alchemyapi_python/.*
+nlp_special
+nlp_special/.*
+Input/pdfs/raw/.*

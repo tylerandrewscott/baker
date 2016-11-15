@@ -1,0 +1,10 @@
+name: baker_plot
+account: tylerscott
+server: shinyapps.io
+appId: 101730
+bundleId: 449133
+url: https://tylerscott.shinyapps.io/baker_plot/
+when: 1463068202.19036
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: global.R|Icon
