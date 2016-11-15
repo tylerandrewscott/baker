@@ -82,3 +82,5 @@ nlp_special
 nlp_special/.*
 Input/pdfs/raw/.*
 .*.pdf
+nlp_special/.*
+nlp_special
