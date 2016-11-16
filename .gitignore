@@ -84,3 +84,5 @@ Input/pdfs/raw/.*
 .*.pdf
 nlp_special/.*
 nlp_special
+Code/alchemyapi_python/.*
+Code/alchemyapi_python
