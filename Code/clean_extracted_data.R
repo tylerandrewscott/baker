@@ -1,45 +1,27 @@
-library(dplyr);library(tidyr)
-
-temp = read.csv('Input/wa_longitudinal/scraped_data/meeting_attendance_extraction.csv',stringsAsFactors = F)
-temp2 = read.csv('Input/wa_longitudinal/scraped_data/meeting_attendance_extraction_batch2.csv',
-                stringsAsFactors = F)
+library(tidyverse)
 library(lubridate)
-temp2$Date[temp2$Date == 'january, 2009'] = 'january 8, 2009'
-
-temp$Date = ymd(temp$Date)
-temp$Date[temp$Date=="2016-05-11"] = ymd(gsub('_[a-z]+$','',gsub('[0-9]{4}[a-z]+','',temp$Meeting[temp$Date=="2016-05-11"])))
-
-temp2 = temp2[!temp2$Meeting %in% c('2010-10-27_BRCC_Final_Notes.doc.pdf',
-                                 "Baker River Coordinating Committee update for May and directions for June 8 meeting"),]
-
-temp2$Date = (gsub(',$','',gsub(' [0-9]{1,2}:[0-9]{2}$','',gsub(' am| pm','',temp2$Date))))
-temp2$Date[temp2$Date == 'sept. 5, 2013'] = 'september 5, 2013'
-
-temp2$Date = mdy(temp2$Date)
-temp2$Year = year(temp2$Date)
-
-temp = full_join(temp,temp2)
-
+temp = read_csv('Input/scraped_data/meeting_attendance_extraction.csv') %>% 
+  dplyr::select(-X1) %>% mutate(Meeting = gsub('\\.txt$','',Meeting))
 
 library(stringr)
 
-base1 = 'Input/wa_longitudinal/bakermeetingtext/txt1/'
-base2 = 'Input/wa_longitudinal/bakermeetingtext/txt2/'
-suffix = '.pdf.txt'
-file_list1 = list.files('Input/wa_longitudinal/bakermeetingtext/txt1/')
-file_list2 = list.files('Input/wa_longitudinal/bakermeetingtext/txt2/')
+base = 'Input/pdfs/text/'
+suffix = '.txt'
+file_list = list.files('Input/pdfs/text/')
 
-for (meet in unique(temp$Meeting))
-{
-  meet_file = ifelse(any(grepl(meet,file_list1)),paste0(base1,meet,suffix),paste0(base2,meet,suffix))
-  temp_file = readChar(meet_file, file.info(meet_file)$size)
-  in_meet_text = filter(temp,Meeting==meet)
-  temp_file = gsub('.*PRESENT','',temp_file)
-  after_present = sapply(in_meet_text$Name,function(x) grepl(x,temp_file),simplify=T)
-  temp = temp[((temp$Name %in% names(after_present)[after_present]) & meet == temp$Meeting)|meet!=temp$Meeting,]
-}
+temp = temp %>% filter(paste0(Meeting,'.txt') %in% file_list)
 
-temp = temp %>% select(-X)
+# for (meet in unique(temp$Meeting))
+# {
+#   meet_file = paste0(base,meet,suffix)
+#   temp_file = readChar(meet_file, file.info(meet_file)$size)
+#   in_meet_text = filter(temp,Meeting==meet)
+#   #temp_file = gsub('.*PRESENT:','',temp_file)
+#   #print(grepl('.*PRESENT:',temp_file))
+#   #after_present = sapply(in_meet_text$Name,function(x) grepl(x,temp_file),simplify=T)
+#   #temp = temp[((temp$Name %in% names(after_present)[after_present]) & meet == temp$Meeting)|meet!=temp$Meeting,]
+# }
+
 temp = temp[!grepl('^[^A-Z]',temp$Name),]
 temp$Org = as.character(temp$Org)
 temp$Name = as.character(temp$Name)
@@ -54,6 +36,10 @@ temp$Name = gsub('[A-Z]{4}','',temp$Name)
 #### Drop All 1-name only observations (i.e., "Kevin") ###
 temp = temp[grep(' ',temp$Name,invert=F),]
 
+
+
+
+
 #### Drop "names" which are note to email someone
 temp = temp[grep('Email',temp$Name,invert=T),]
 
@@ -65,7 +51,6 @@ temp$Org[grep('TNC',temp$Org)] = 'TNC'
 ###make all pse consistent
 temp$Org = gsub('Puget Sound Energy','PSE',temp$Org)
 temp$Org[grep('PSE',temp$Org)] = 'PSE'
-
 
 ### make all usfs consistent
 temp$Org[grep('Forest',temp$Org)] = 'USFS'
@@ -152,6 +137,9 @@ temp$Org[intersect(grep('Arch',temp$Org),grep('North',temp$Org))] = 'Northwest A
 
 
 
+
+
+
 temp = temp[grep('rep\\.',temp$Name,invert=T),]
 temp = temp[nchar(temp$Name)<24,]
 temp = temp[grep(' re',temp$Name,invert=T),]
@@ -165,6 +153,9 @@ temp$Name[temp$Name == 'Arnold Aspelund'] = 'Arnie Aspelund'
 temp$Name[temp$Name == 'Leland Stilson/DNR'] = 'Lee Stilson'
 temp$Org[temp$Name == 'Bill Ryan/EPA Hydro'] = 'EPA Hydro'
 temp$Name[temp$Name == 'Bill Ryan/EPA Hydro'] = 'Bill Ryan'
+temp$Name[temp$Name == "Arnie Aspelund Arnie" ] = "Arnie Aspelund" 
+
+
 temp$Name = gsub('\\/$','',temp$Name)
 
 temp$Org[temp$Name == 'Barb Gassler-PSE'] = 'PSE'
@@ -188,6 +179,7 @@ temp$Name[temp$Name=="Peter H. Dykstra"] = "Peter Dykstra"
 temp$Name[temp$Name=="Chal A. Martin"] = "Chal Martin"
 
 temp$Name[temp$Name=='Bob Wright-Ecology'] = 'Bob Wright'
+
 temp$Name[grep('Jerry Stedinger',temp$Name)] = 'Jerry Stedinger'
 temp$Name[grep("David R. Montgomery",temp$Name)] = "David R. Montgomery"
 temp$Name[grep("Omroa Bhagwandin",temp$Name)] = "Omrau Bhagwandin" 
@@ -195,30 +187,39 @@ temp$Name[temp$Name=='Kathleen W. Smayda'] = 'Kathy Smayda'
 temp$Name[grep("Bill Hebner",temp$Name)] = "Bill Hebner" 
 temp$Name[grep("Charles Howard",temp$Name)] = "Charles Howard"
 temp$Name[grep("Scott Heller",temp$Name)] = "Scott Heller"
+temp$Name[grep("Roger Nicols",temp$Name)] = "Roger Nicholls"
+temp$Name[grep("Charlie O'Hara",temp$Name)] = "Charles O'Hara"
+temp$Name[temp$Name=='Jamie DeVanter'|temp$Name=='Jamie Van De Vanter'] = 'Jamie Van DeVanter'
+temp$Name[temp$Name=='H. Beecher'] = 'Hal Beecher'
+temp$Name[temp$Name=="Jon Vanderheyden"] = "Jon VanderHayden"
+temp$Name[grep("Mierendorf",temp$Name)] = 'Bob Mierendorf'
 
 temp = temp[grep('\\.$',temp$Name,invert=T),]
 temp = temp[grep('Wiltse ',temp$Name,invert=T),]
-temp = temp[!(temp$Name %in% c("Reed Canarygrass"    ,   "Tony Forward Kathy" ,"Rick Call Daryl Hamburg","Smayda Envrionmental","Tony Contact Susan Hada",
-                             "Tony Tony Fuchs","Tony Tony Tony Tony"  ,"Tony Work"   ,"Mike Tony/Ray"     ,"Tony Research","Tony Forward Kathy",
+temp = temp[!(temp$Name %in% c("Reed Canarygrass"   ,"Warner Wayne" , "Tom Facilitation", "Montgomery Watson/Harza", "Tony Forward Kathy" ,"Rick Call Daryl Hamburg","Smayda Envrionmental","Tony Contact Susan Hada",
+                             "Tony Tony Fuchs","Tony Tony Tony Tony" ,"Baker Sockeye" ,"Tony Work"   ,"Mike Tony/Ray"     ,"Tony Research","Tony Forward Kathy",
                              "Salmonid Ruth", "La Connor","Fidalgo Flyfishers","Ryan Booth Kelly Bush","Tony Tony Fuchs","Sedro Woolley" ,
                              "Shannon Cr." ,"Samish Jessie" ,"Rob W. What","Peregrine Falcon" ,"Point Elliott","President Bush","Baker R." ,
                              "Chum Salmon" ,"Well Dones", "Representative Larson","Preschedule Baker"  ,"Meeting Dee"  ,"Marty Draft"  ,"Andy Aesthetics" ,
-                             "Andy Need"         ,      "Andy—Tell Berger"  , "Burger King"," Cary"   ,"Deputy Nelson"    ,"G. Reopeners" ,
+                             "Andy Need"         ,  "Jay Web-Ex", "Chris Use",   "Andy—Tell Berger"  , "Burger King"," Cary"   ,"Deputy Nelson"    ,"G. Reopeners" ,
                              "Equinox Campbell" ,"Elk Herd"   ,"Grizzly Bear"  , "Jerry Anacortes","J. A." ,"Kathleen Update",
                              "Don Connect" ,"Design Eldridge"  ,"Teamlets Dee"  , "Vernon Hydrographs","Baker Relicense" ,
                              "Baker Nale.","Moore/Kate Chaney",    "Susan What","Alison Studley",'Dave Work','Kuzler','Scott Status',
                              "Shannon Lakes","Mother Hen","Mark Dailyhere","Blue Tarp","Dave Talk",'Dave Vet','Dave Dave','June Mtgs',
                              "Greg- Deputy","Greg Lind Craig Gannett","Miss Saul",'Chris Elk',
                              "Montgomery Watson","Montgomery Watson Harza","Elk Teamlet","Jeff McGowan Lyn Wiltse","Colonel Graves",
-                             "Congressman Larson","Charles D. D. Howard","J. Largeplantsare",
+                             "Congressman Larson","Charles D. D. Howard","J. Largeplantsare", "Ann Ann Carol Carol Pam",
                              'Vernon Joint',"Blue Tarp","Bob W.—Regarding" ,'Bob Helton Nick','Ira Marty',
                              "Bob W—Draft","Bob N. Actions","Bob Need","Kathleen Test","Carl Report"     ,        "Chris What"  ,
                              "Captain Hebner" ,"Charles Howard Model","Janis Bouma Ardis Bynum" ,
-                             "Patrick Dylan Parks","Kim Work",'Lorna Check','Nick Coordinate',
-                             'Tony Coordinate',"Elizabeth Investigate",
-                             "Louis Berger Andy","Louis Berger/Meridian",
-                             "Desmond Dr. S.E. Lacy","Don Gay/Fred Seavey",
-                             "Baker Ranger" ,"Brian What"  ,"Krispy Kreme","Salmonid Fry",
+                             "Patrick Dylan Parks","Kim Work",'Lorna Check','Nick Coordinate',"Ira Ira"   ,"Haley Draft" ,"Heidi Get",
+                             'Tony Coordinate',"Elizabeth Investigate","Vogler Brett","Bill Bill Rich",
+                             "Louis Berger Andy","Louis Berger/Meridian","Tony Get" , "Tony Queue",
+                             "Desmond Dr. S.E. Lacy","Don Gay/Fred Seavey","Tony Reserve" , "Dave Cary Jacob",
+                             "Baker Ranger" ,"Brian What"  ,"Krispy Kreme","Salmonid Fry","Ann Ann Carol Carol Pam",
+                             "Tony Tony","History Hydrops" ,"Dave Pam Lyn" ,"Tony Kathy All Marty" ,
+                             "Tony Add"          ,      "Tony Baker"        ,      "Tony Chris"      ,        "Tony Discussion" ,
+                             "Tony Next"  ,             "Tony Post"        ,       "Tony Reed"            ,   "Tony Report"   ,"Sedro Wooley" ,
                              "Tony Marty" ,  "Tony From"  ,  "Tony Chris –", "Tony Status" ,
                              "Tony Connect", "Tony Contact Susan Hada","Tony- I",'Tony Work','Tony Sent', 'Tony What','Tony Research',
                              'Tony Check','Tony Kathy',"Tony Coordinate Joetta",
@@ -292,21 +293,21 @@ temp$Topic[temp$Topic %in% c('tst','solution')] = 'solution'
 temp$Topic[temp$Topic %in% c('public','workshop')] = 'public/general'
 temp$Topic[temp$Topic %in% c('bricc','solution','process','brcc')] = 'admin'
 
-name_table = lapply(temp$Name,function(x) table(agrep(x,temp$Name,max.distance =list(all=0.1,insertions=1,deletions=1,substitutions=1),value=T)))
-modal_name = sapply(name_table,function(x) names(x)[x==max(x)],simplify=T)
 
+library(pbapply)
+name_table = pblapply(temp$Name,function(x) table(agrep(x,temp$Name,max.distance =list(all=0.1,insertions=1,deletions=1,substitutions=1),value=T)))
+modal_name = sapply(name_table,function(x) names(x)[x==max(x)][1],simplify=T)
 temp$Name = unlist(modal_name)
 
-org_table_byname = lapply(temp$Name,function(x) as.data.frame(table(temp$Org[temp$Name==x])) %>% arrange(-Freq) %>% mutate(Var1 = as.character(Var1)))
+
+org_table_byname = pblapply(temp$Name,function(x) as.data.frame(table(temp$Org[temp$Name==x])) %>% arrange(-Freq) %>% mutate(Var1 = as.character(Var1)))
 modal_org = lapply(org_table_byname,function(x) ifelse(x$Var1[1]!='99999',x$Var1[1],x$Var1[2]))
 temp$Org = unlist(modal_org)
 
 temp = temp %>% arrange(Meeting,Name,Relevance) %>% filter(!duplicated(paste0(Meeting,Name)))
 
 
-
-
-write.csv(temp,'Input/wa_longitudinal/scraped_data/temp_cleaned_data.csv')
+write.csv(temp,'Input/scraped_data/temp_cleaned_data.csv')
 
 
 
