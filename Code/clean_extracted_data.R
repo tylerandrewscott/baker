@@ -194,18 +194,23 @@ temp$Name[temp$Name=='H. Beecher'] = 'Hal Beecher'
 temp$Name[temp$Name=="Jon Vanderheyden"] = "Jon VanderHayden"
 temp$Name[grep("Mierendorf",temp$Name)] = 'Bob Mierendorf'
 
+temp = temp[!grepl("Status|Discussion|Phone|Potential|Draft|Dolly Varden",temp$Name),]
+temp = temp %>% filter(!Name %in% c('W.T. Sexton',"E. Rydin",'P. Hyenstrand','R.C. Szaro','A.J. Malk','N.C. Johnson'))
+
+
+
 temp = temp[grep('\\.$',temp$Name,invert=T),]
 temp = temp[grep('Wiltse ',temp$Name,invert=T),]
-temp = temp[!(temp$Name %in% c("Reed Canarygrass"   ,"Warner Wayne" , "Tom Facilitation", "Montgomery Watson/Harza", "Tony Forward Kathy" ,"Rick Call Daryl Hamburg","Smayda Envrionmental","Tony Contact Susan Hada",
+temp = temp[!(temp$Name %in% c("Reed Canarygrass"  ,"Roy Hamilton","Burpee Hill" ,"Warner Wayne" , "Tom Facilitation", "Montgomery Watson/Harza", "Tony Forward Kathy" ,"Rick Call Daryl Hamburg","Smayda Envrionmental","Tony Contact Susan Hada",
                              "Tony Tony Fuchs","Tony Tony Tony Tony" ,"Baker Sockeye" ,"Tony Work"   ,"Mike Tony/Ray"     ,"Tony Research","Tony Forward Kathy",
                              "Salmonid Ruth", "La Connor","Fidalgo Flyfishers","Ryan Booth Kelly Bush","Tony Tony Fuchs","Sedro Woolley" ,
                              "Shannon Cr." ,"Samish Jessie" ,"Rob W. What","Peregrine Falcon" ,"Point Elliott","President Bush","Baker R." ,
                              "Chum Salmon" ,"Well Dones", "Representative Larson","Preschedule Baker"  ,"Meeting Dee"  ,"Marty Draft"  ,"Andy Aesthetics" ,
-                             "Andy Need"         ,  "Jay Web-Ex", "Chris Use",   "Andy—Tell Berger"  , "Burger King"," Cary"   ,"Deputy Nelson"    ,"G. Reopeners" ,
+                             "Andy Need"     ,"Elizabeth Elizabeth"   , "Chris Chris"  ,  "Jay Web-Ex", "Chris Use",   "Andy—Tell Berger"  , "Burger King"," Cary"   ,"Deputy Nelson"    ,"G. Reopeners" ,
                              "Equinox Campbell" ,"Elk Herd"   ,"Grizzly Bear"  , "Jerry Anacortes","J. A." ,"Kathleen Update",
                              "Don Connect" ,"Design Eldridge"  ,"Teamlets Dee"  , "Vernon Hydrographs","Baker Relicense" ,
-                             "Baker Nale.","Moore/Kate Chaney",    "Susan What","Alison Studley",'Dave Work','Kuzler','Scott Status',
-                             "Shannon Lakes","Mother Hen","Mark Dailyhere","Blue Tarp","Dave Talk",'Dave Vet','Dave Dave','June Mtgs',
+                             "Baker Nale.","Moore/Kate Chaney","General Stockton",  "Herb Robert",  "Susan What","Alison Studley",'Dave Work','Kuzler','Scott Status',
+                             "Shannon Lakes", "Pam Connect"   ,"Mother Hen","Mark Dailyhere","Blue Tarp","Dave Talk",'Dave Vet','Dave Dave','June Mtgs',
                              "Greg- Deputy","Greg Lind Craig Gannett","Miss Saul",'Chris Elk',
                              "Montgomery Watson","Montgomery Watson Harza","Elk Teamlet","Jeff McGowan Lyn Wiltse","Colonel Graves",
                              "Congressman Larson","Charles D. D. Howard","J. Largeplantsare", "Ann Ann Carol Carol Pam",
@@ -218,13 +223,14 @@ temp = temp[!(temp$Name %in% c("Reed Canarygrass"   ,"Warner Wayne" , "Tom Facil
                              "Desmond Dr. S.E. Lacy","Don Gay/Fred Seavey","Tony Reserve" , "Dave Cary Jacob",
                              "Baker Ranger" ,"Brian What"  ,"Krispy Kreme","Salmonid Fry","Ann Ann Carol Carol Pam",
                              "Tony Tony","History Hydrops" ,"Dave Pam Lyn" ,"Tony Kathy All Marty" ,
-                             "Tony Add"          ,      "Tony Baker"        ,      "Tony Chris"      ,        "Tony Discussion" ,
-                             "Tony Next"  ,             "Tony Post"        ,       "Tony Reed"            ,   "Tony Report"   ,"Sedro Wooley" ,
+                             "Tony Add"     ,"Dan See"     ,  "Haley Connect",    "Tony Baker"        ,      "Tony Chris"      ,        "Tony Discussion" ,
+                             "Tony Next"  ,             "Tony Post"   ,'Ira Mail Stan'     ,       "Tony Reed"            ,   "Tony Report"   ,"Sedro Wooley" ,
                              "Tony Marty" ,  "Tony From"  ,  "Tony Chris –", "Tony Status" ,
                              "Tony Connect", "Tony Contact Susan Hada","Tony- I",'Tony Work','Tony Sent', 'Tony What','Tony Research',
-                             'Tony Check','Tony Kathy',"Tony Coordinate Joetta",
+                             'Tony Check','Tony Kathy',"Tony Coordinate Joetta","Virginia Mason",
                              "Hayes","Stan Cc", "Carol Check" , "Jeff- Cake" )),] 
-temp$Name = gsub('Officer ','',temp$Name)
+temp$Name = gsub('Officer |Colonel ','',temp$Name)
+temp$Name = gsub('Capt\\. |Captain |Sgt\\. ','',temp$Name)
 
 temp = temp[!grepl('•',temp$Name),]
 temp = temp[!grepl(' Work',temp$Name),]
@@ -293,8 +299,12 @@ temp$Topic[temp$Topic %in% c('tst','solution')] = 'solution'
 temp$Topic[temp$Topic %in% c('public','workshop')] = 'public/general'
 temp$Topic[temp$Topic %in% c('bricc','solution','process','brcc')] = 'admin'
 
+temp = temp[!grepl('^ ',temp$Name),]
 
 library(pbapply)
+
+temp$Name = str_to_title(temp$Name)
+
 name_table = pblapply(temp$Name,function(x) table(agrep(x,temp$Name,max.distance =list(all=0.1,insertions=1,deletions=1,substitutions=1),value=T)))
 modal_name = sapply(name_table,function(x) names(x)[x==max(x)][1],simplify=T)
 temp$Name = unlist(modal_name)
@@ -306,10 +316,7 @@ temp$Org = unlist(modal_org)
 
 temp = temp %>% arrange(Meeting,Name,Relevance) %>% filter(!duplicated(paste0(Meeting,Name)))
 
-
 write.csv(temp,'Input/scraped_data/temp_cleaned_data.csv')
-
-
 
 
 
