@@ -86,3 +86,5 @@ nlp_special/.*
 nlp_special
 Code/alchemyapi_python/.*
 Code/alchemyapi_python
+nlp_special
+nlp_special/.*
