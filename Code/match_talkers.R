@@ -3,13 +3,14 @@ library(stringr)
 library(statnet)
 library(btergm)
 rm(list=ls())
+
+
 talkers = read_csv('Input/pdfs/extraction/named_entities.csv') %>% 
   dplyr::select(-X1) %>%
   filter(!grepl('[A-Z]{4}',Subject),!grepl('^[a-z]',Subject)) %>%
   mutate(Subject = gsub('\\.$','',Subject)) %>%
   mutate(Meeting = gsub('\\.txt$','',Meeting)) %>%
   filter(!grepl('Upper Baker',Subject)) %>% mutate(Year = str_extract(Meeting,'[0-9]{4}'))
-
 
 attendance = read_csv('Input/scraped_data/temp_cleaned_data.csv') %>% 
   dplyr::select(-X1) %>% mutate(Year = str_extract(Meeting,'[0-9]{4}'))
@@ -25,9 +26,6 @@ attendance$Dec_Date = decimal_date(attendance$Date)
 
 talkers$Date = attendance$Date[match(talkers$Meeting,attendance$Meeting)]
 talkers$Dec_Date = attendance$Dec_Date[match(talkers$Meeting,attendance$Meeting)]
-
-grep('^[A-Z]',talkers$Verb,value=T)
-
 
 
 phase_break_date = c(mdy('5/8/2003'),mdy('11/24/2004'),mdy('10/17/2008'),mdy('01/01/2015'))
@@ -54,7 +52,7 @@ meeting_master$Phase = ifelse(meeting_master$Dec_Date < phase_break_ddate[1],1,
 #   scale_x_discrete(name = 'Phase',labels=as.character(phase_breaks$phase_name))
 # grid.arrange(g1,g2)
 
-period_break_ddates
+
 attendance = left_join(attendance,meeting_master)
 talkers = left_join(talkers,meeting_master)
 
@@ -62,14 +60,15 @@ match_as_present = lapply(1:length(talkers$Subject),
                           function(x) ifelse(length( grep(talkers$Subject[x],attendance$Name[attendance$Meeting==talkers$Meeting[x]]))==0,NA,
                                              grep(talkers$Subject[x],attendance$Name[attendance$Meeting==talkers$Meeting[x]],value=T)))
 
-talkers = talkers %>% mutate(Subject_Match = unlist(match_as_present)) %>%
+
+talkers_summary = talkers %>% mutate(Subject_Match = unlist(match_as_present)) %>%
   filter(!is.na(Subject_Match)) %>% group_by(Subject_Match,Meeting,Year,Date,Dec_Date,Interval,Phase) %>% summarise(part_count = n())
 
 
-participation_edges = do.call(rbind,lapply(1:nrow(talkers),function(i)
-  data.frame(Participant = talkers$Subject_Match[i],Attendee= attendance$Name[attendance$Meeting==talkers$Meeting[i]],
-             part_count = talkers$part_count[i],Meeting = talkers$Meeting[i],Year = talkers$Year[i],Date = talkers$Date[i],
-             Dec_Date = talkers$Dec_Date[i],Phase = talkers$Phase[i],Interval = talkers$Interval[i])))
+participation_edges = do.call(rbind,lapply(1:nrow(talkers_summary),function(i)
+  data.frame(Participant = talkers_summary$Subject_Match[i],Attendee= attendance$Name[attendance$Meeting==talkers_summary$Meeting[i]],
+             part_count = talkers_summary$part_count[i],Meeting = talkers_summary$Meeting[i],Year = talkers_summary$Year[i],Date = talkers_summary$Date[i],
+             Dec_Date = talkers_summary$Dec_Date[i],Phase = talkers_summary$Phase[i],Interval = talkers_summary$Interval[i])))
 
 
 

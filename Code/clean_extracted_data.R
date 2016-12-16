@@ -38,8 +38,6 @@ temp = temp[grep(' ',temp$Name,invert=F),]
 
 
 
-
-
 #### Drop "names" which are note to email someone
 temp = temp[grep('Email',temp$Name,invert=T),]
 
