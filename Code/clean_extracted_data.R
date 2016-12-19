@@ -3,13 +3,21 @@ library(lubridate)
 temp = read_csv('Input/scraped_data/meeting_attendance_extraction.csv') %>% 
   dplyr::select(-X1) %>% mutate(Meeting = gsub('\\.txt$','',Meeting))
 
-library(stringr)
+library(tm)
+library(pdftools)
 
-base = 'Input/pdfs/text/'
-suffix = '.txt'
+library(stringr)
+library(tidyverse)
+#nohup R --no-save <win/project/bogachiel/baker/BakerPDFS/bakerpdfcode2.R >& win/project/bogachiel/baker/BakerPDFS/bakerpdfcode2.Rout &
+library(tm)
+library(SnowballC)
+library(stringr)
+library(RCurl)
+
 file_list = list.files('Input/pdfs/text/')
 
 temp = temp %>% filter(paste0(Meeting,'.txt') %in% file_list)
+
 
 # for (meet in unique(temp$Meeting))
 # {
@@ -72,13 +80,10 @@ temp$Org = gsub('^the ','',temp$Org)
 temp$Org = gsub('^with ','',temp$Org)
 temp$Org = gsub('^of ','',temp$Org)
 
-temp$Org[grep('U.S. Fish',temp$Org)] = 'USFWS'
-temp$Org[grep('USFWS',temp$Org)] = 'USFWS'
-temp$Org[grep('US Fish and Wildlife',temp$Org)] = 'USFWS'
+temp$Org[grep('U.S. Fish|US Fish and Wildlife|USFWS',temp$Org)] = 'USFWS'
 temp$Org[grep('Natural Resources',temp$Org)] = 'WDNR'
 temp$Org[grep('DNR',temp$Org)] = 'WDNR'
-temp$Org[grep('Ecology',temp$Org)] = 'WDOE'
-temp$Org[grep('WA DOE',temp$Org)] = 'WDOE'
+temp$Org[grep('Ecology|WA DOE',temp$Org)] = 'WDOE'
 temp$Org[grep('DOE',temp$Org)] = 'WDOE'
 temp$Org[intersect(grep('Arch',temp$Org),grep('WA',temp$Org))] = 'WAHP'
 temp$Org[intersect(grep('Arch',temp$Org),grep('Hist',temp$Org))] = 'WAHP'
@@ -88,6 +93,7 @@ temp$Org[intersect(intersect(grep('US|U.S.',temp$Org),grep('Fish|fish',temp$Org)
 temp$Org[grep('WDFW',temp$Org)] = 'WDFW'
 temp$Org[temp$Org == 'FS'] = 'USFS'
 temp$Org[grep('Berger Group',temp$Org)] = 'Louis Berger Group'
+temp$Org[grep('USIT',temp$Org)] = 'Upper Skagit Indian Tribe'
 temp$Org[grep('Trout',temp$Org)] = 'Trout Unlimited'
 temp$Org[intersect(intersect(grep('Corp|Corps',temp$Org),grep('Engineer',temp$Org)),grep('US|U.S.|Army',temp$Org))] = 'USACE'
 temp$Org[grep('USACE',temp$Org)] = 'USACE'
@@ -147,7 +153,9 @@ temp = temp[grep('[0-9]',temp$Name,invert=T),]
 
 
 temp$Org[temp$Name == 'Leland Stilson/DNR'] = 'WDNR'
+temp$Org[temp$Name == 'Haley Edwards'] = 'PSE'
 temp$Name[temp$Name == 'Arnold Aspelund'] = 'Arnie Aspelund'
+temp$Name[grepl('Shanahan',temp$Name)] = 'Jon-Paul Shanahan'
 temp$Name[temp$Name == 'Leland Stilson/DNR'] = 'Lee Stilson'
 temp$Org[temp$Name == 'Bill Ryan/EPA Hydro'] = 'EPA Hydro'
 temp$Name[temp$Name == 'Bill Ryan/EPA Hydro'] = 'Bill Ryan'
@@ -176,19 +184,25 @@ temp$Org[temp$Name=='Bob Wright-Ecology'] = 'WDOE'
 temp$Name[temp$Name=="Peter H. Dykstra"] = "Peter Dykstra"
 temp$Name[temp$Name=="Chal A. Martin"] = "Chal Martin"
 
-temp$Name[temp$Name=='Bob Wright-Ecology'] = 'Bob Wright'
 
+temp$Name[temp$Name=='Bob Wright-Ecology'] = 'Bob Wright'
 temp$Name[grep('Jerry Stedinger',temp$Name)] = 'Jerry Stedinger'
 temp$Name[grep("David R. Montgomery",temp$Name)] = "David R. Montgomery"
 temp$Name[grep("Omroa Bhagwandin",temp$Name)] = "Omrau Bhagwandin" 
 temp$Name[temp$Name=='Kathleen W. Smayda'] = 'Kathy Smayda'
 temp$Name[grep("Bill Hebner",temp$Name)] = "Bill Hebner" 
+temp$Name[grep("Chuck Ebel",temp$Name)] = "Chuck Ebel" 
+temp$Name[grep("Ed Meyer Wayne Porter",temp$Name)] = "Wayne Porter" 
+
 temp$Name[grep("Charles Howard",temp$Name)] = "Charles Howard"
 temp$Name[grep("Scott Heller",temp$Name)] = "Scott Heller"
 temp$Name[grep("Roger Nicols",temp$Name)] = "Roger Nicholls"
 temp$Name[grep("Charlie O'Hara",temp$Name)] = "Charles O'Hara"
 temp$Name[temp$Name=='Jamie DeVanter'|temp$Name=='Jamie Van De Vanter'] = 'Jamie Van DeVanter'
 temp$Name[temp$Name=='H. Beecher'] = 'Hal Beecher'
+temp$Name[temp$Name=="Mary Jean What"] = "Mary Jean Wiltse"
+
+
 temp$Name[temp$Name=="Jon Vanderheyden"] = "Jon VanderHayden"
 temp$Name[grep("Mierendorf",temp$Name)] = 'Bob Mierendorf'
 
@@ -199,12 +213,12 @@ temp = temp %>% filter(!Name %in% c('W.T. Sexton',"E. Rydin",'P. Hyenstrand','R.
 
 temp = temp[grep('\\.$',temp$Name,invert=T),]
 temp = temp[grep('Wiltse ',temp$Name,invert=T),]
-temp = temp[!(temp$Name %in% c("Reed Canarygrass"  ,"Roy Hamilton","Burpee Hill" ,"Warner Wayne" , "Tom Facilitation", "Montgomery Watson/Harza", "Tony Forward Kathy" ,"Rick Call Daryl Hamburg","Smayda Envrionmental","Tony Contact Susan Hada",
+temp = temp[!(temp$Name %in% c("Reed Canarygrass" ,'Haley Dave' ,"Roy Hamilton","Burpee Hill" ,"Warner Wayne" , "Tom Facilitation", "Montgomery Watson/Harza", "Tony Forward Kathy" ,"Rick Call Daryl Hamburg","Smayda Envrionmental","Tony Contact Susan Hada",
                              "Tony Tony Fuchs","Tony Tony Tony Tony" ,"Baker Sockeye" ,"Tony Work"   ,"Mike Tony/Ray"     ,"Tony Research","Tony Forward Kathy",
                              "Salmonid Ruth", "La Connor","Fidalgo Flyfishers","Ryan Booth Kelly Bush","Tony Tony Fuchs","Sedro Woolley" ,
                              "Shannon Cr." ,"Samish Jessie" ,"Rob W. What","Peregrine Falcon" ,"Point Elliott","President Bush","Baker R." ,
-                             "Chum Salmon" ,"Well Dones", "Representative Larson","Preschedule Baker"  ,"Meeting Dee"  ,"Marty Draft"  ,"Andy Aesthetics" ,
-                             "Andy Need"     ,"Elizabeth Elizabeth"   , "Chris Chris"  ,  "Jay Web-Ex", "Chris Use",   "Andy—Tell Berger"  , "Burger King"," Cary"   ,"Deputy Nelson"    ,"G. Reopeners" ,
+                             "Chum Salmon" ,"Well Dones", "M. Vaughn" ,"Representative Larson","Preschedule Baker"  ,"Meeting Dee"  ,"Marty Draft"  ,"Andy Aesthetics" ,
+                             "Andy Need"     ,"Elizabeth Elizabeth"  ,"Steve All" , "Chris Chris"  ,  "Jay Web-Ex", "Chris Use",   "Andy—Tell Berger"  , "Burger King"," Cary"   ,"Deputy Nelson"    ,"G. Reopeners" ,
                              "Equinox Campbell" ,"Elk Herd"   ,"Grizzly Bear"  , "Jerry Anacortes","J. A." ,"Kathleen Update",
                              "Don Connect" ,"Design Eldridge"  ,"Teamlets Dee"  , "Vernon Hydrographs","Baker Relicense" ,
                              "Baker Nale.","Moore/Kate Chaney","General Stockton",  "Herb Robert",  "Susan What","Alison Studley",'Dave Work','Kuzler','Scott Status',
@@ -219,17 +233,32 @@ temp = temp[!(temp$Name %in% c("Reed Canarygrass"  ,"Roy Hamilton","Burpee Hill"
                              'Tony Coordinate',"Elizabeth Investigate","Vogler Brett","Bill Bill Rich",
                              "Louis Berger Andy","Louis Berger/Meridian","Tony Get" , "Tony Queue",
                              "Desmond Dr. S.E. Lacy","Don Gay/Fred Seavey","Tony Reserve" , "Dave Cary Jacob",
-                             "Baker Ranger" ,"Brian What"  ,"Krispy Kreme","Salmonid Fry","Ann Ann Carol Carol Pam",
+                             "Baker Ranger" ,"Brian What",'T. Brock'  ,"Krispy Kreme","Salmonid Fry","Ann Ann Carol Carol Pam",
                              "Tony Tony","History Hydrops" ,"Dave Pam Lyn" ,"Tony Kathy All Marty" ,
-                             "Tony Add"     ,"Dan See"     ,  "Haley Connect",    "Tony Baker"        ,      "Tony Chris"      ,        "Tony Discussion" ,
-                             "Tony Next"  ,             "Tony Post"   ,'Ira Mail Stan'     ,       "Tony Reed"            ,   "Tony Report"   ,"Sedro Wooley" ,
-                             "Tony Marty" ,  "Tony From"  ,  "Tony Chris –", "Tony Status" ,
+                             "Stan Coordinate"   ,"D.B. Thompson","Connie Charlie Black","Bob Don",
+                             "Tony Add"     ,"Dan See" ,"Saint Valentine",'Chris Drechsel Lloyd'  ,"Cary Cary Feldmann"  ,  "Haley Connect",    "Tony Baker"        ,      "Tony Chris"      ,        "Tony Discussion" ,
+                             "Tony Next"  ,     "Tony Fuchs Pam Garland",  "Todd Wilbur Don Gay"  , "Tony Post"   ,'Ira Mail Stan'     ,       "Tony Reed"            ,   "Tony Report"   ,"Sedro Wooley" ,
+                             "Tony Marty" ,  "Tony From"  ,  "Tony Chris –", "Tony Status" ,"C.S. Sodhi" ,
                              "Tony Connect", "Tony Contact Susan Hada","Tony- I",'Tony Work','Tony Sent', 'Tony What','Tony Research',
                              'Tony Check','Tony Kathy',"Tony Coordinate Joetta","Virginia Mason",
-                             "Hayes","Stan Cc", "Carol Check" , "Jeff- Cake" )),] 
+                             "Hayes","Stan Cc", "Cary Feldman Ron","Carol Check" , "Jeff- Cake" ,"C.J. Perrin",
+                             "Kathy Next","Kathy Kathy","Elizabeth Set" ,"Chris March" )),] 
 temp$Name = gsub('Officer |Colonel ','',temp$Name)
 temp$Name = gsub('Capt\\. |Captain |Sgt\\. ','',temp$Name)
 
+temp$Name[grepl('Mary Lou|Marylouise Keefe',temp$Name)] = 'Mary Lou Keefe'
+temp$Name[grepl('Killgore',temp$Name)] = 'Mark Killgore'
+temp$Name[grepl('Potash|Laura Martin',temp$Name)] = 'Laura Potash Martin'
+temp$Name[grepl('Jamie',temp$Name)&grepl(' Van',temp$Name)] = 'Jamie Van De Vanter'
+
+
+
+
+
+temp[temp$Name=="Ed Meyer Wayne Porter" ,]
+temp$Name[temp$Meeting =='2001fish20011211']
+
+temp = temp[!grepl('Rempel',temp$Name),]
 temp = temp[!grepl('•',temp$Name),]
 temp = temp[!grepl(' Work',temp$Name),]
 temp = temp[!grepl('Talk',temp$Name),]
@@ -245,11 +274,13 @@ temp = temp[!grepl('Haley Re',temp$Name),]
 temp = temp[!grepl('Check',temp$Name),]
 temp = temp[!grepl('Oversee',temp$Name),]
 temp = temp[!grepl('Schedule',temp$Name),]
+temp = temp[!grepl('Carex',temp$Name),]
 temp = temp[!grepl('Gifford Pinchot',temp$Name),]
 temp = temp[!grepl('Teamlet',temp$Name),]
 temp = temp[!grepl('Little Baker',temp$Name),]
 temp = temp[!grepl('G. Bernard Shaw',temp$Name),]
 temp = temp[!grepl('Olympia Stephen',temp$Name),]
+temp = temp[!grepl('Vogler',temp$Name),]
 temp = temp[!grepl('Pam Bill Pam Kim',temp$Name),]
 temp = temp[!grepl("Burlington Kara",temp$Name),]
 temp = temp[!grepl("Joe Leary",temp$Name),]
@@ -257,6 +288,7 @@ temp = temp[!grepl("Shannon Smolt",temp$Name),]
 temp = temp[!grepl("Let Martha",temp$Name),]
 temp = temp[!grepl("Sawyer Hall Lacey",temp$Name),]
 temp = temp[!grepl("Phil Bob",temp$Name),]
+temp = temp[!grepl("Elwa Mort" ,temp$Name),]
 
 temp$Name[temp$Name =="John Shultz"] = 'John Schultz'
 temp$Name[grep("Bill Heinck",temp$Name)] = "Bill Heinck"
@@ -303,9 +335,12 @@ library(pbapply)
 
 temp$Name = str_to_title(temp$Name)
 
+
 name_table = pblapply(temp$Name,function(x) table(agrep(x,temp$Name,max.distance =list(all=0.1,insertions=1,deletions=1,substitutions=1),value=T)))
 modal_name = sapply(name_table,function(x) names(x)[x==max(x)][1],simplify=T)
 temp$Name = unlist(modal_name)
+
+
 
 
 org_table_byname = pblapply(temp$Name,function(x) as.data.frame(table(temp$Org[temp$Name==x])) %>% arrange(-Freq) %>% mutate(Var1 = as.character(Var1)))
@@ -317,4 +352,13 @@ temp = temp %>% arrange(Meeting,Name,Relevance) %>% filter(!duplicated(paste0(Me
 write.csv(temp,'Input/scraped_data/temp_cleaned_data.csv')
 
 
+
+
+# 
+# for (name in unique(temp$Name))
+# {
+# t = agrep(name,unique(temp$Name),max.distance =list(all=0.2,insertions=1,deletions=1,substitutions=1),value=T)
+# if (length(t)>1){print(t)}
+# }
+# 
 

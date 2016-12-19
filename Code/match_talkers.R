@@ -4,13 +4,20 @@ library(statnet)
 library(btergm)
 rm(list=ls())
 
-
-talkers = read_csv('Input/pdfs/extraction/named_entities.csv') %>% 
+talkers = read_csv('Input/pdfs/extraction/verbs_categorized_limited_row.csv') %>%
+  filter(!is.na(Verb)) %>%
   dplyr::select(-X1) %>%
   filter(!grepl('[A-Z]{4}',Subject),!grepl('^[a-z]',Subject)) %>%
   mutate(Subject = gsub('\\.$','',Subject)) %>%
   mutate(Meeting = gsub('\\.txt$','',Meeting)) %>%
   filter(!grepl('Upper Baker',Subject)) %>% mutate(Year = str_extract(Meeting,'[0-9]{4}'))
+
+as.data.frame(table(talkers$Verb.Type)) %>% arrange(-Freq)
+
+verb_categories = c('all','communication',)
+
+
+#talkers = read_csv('Input/pdfs/extraction/named_entities.csv')
 
 attendance = read_csv('Input/scraped_data/temp_cleaned_data.csv') %>% 
   dplyr::select(-X1) %>% mutate(Year = str_extract(Meeting,'[0-9]{4}'))
@@ -63,6 +70,9 @@ match_as_present = lapply(1:length(talkers$Subject),
 
 talkers_summary = talkers %>% mutate(Subject_Match = unlist(match_as_present)) %>%
   filter(!is.na(Subject_Match)) %>% group_by(Subject_Match,Meeting,Year,Date,Dec_Date,Interval,Phase) %>% summarise(part_count = n())
+
+
+
 
 
 participation_edges = do.call(rbind,lapply(1:nrow(talkers_summary),function(i)
@@ -169,7 +179,7 @@ for (x in 2:length(net_list))
 for (x in 2:length(net_list))
 {
   network::set.vertex.attribute(net_list[[x]],attrname = 'Utility',
-                                value = ifelse(network.vertex.names(net_list[[x]]) %in% node_base$Name[node_base$Utility==1],1,0))
+                                value = ifelse(network::network.vertex.names(net_list[[x]]) %in% node_base$Name[node_base$Utility==1],1,0))
 }
 
 
@@ -178,14 +188,14 @@ node_base$Mandatory = ifelse(grepl("NMFS|USFS|WDOE",node_base$Org),1,0)
 for (x in 2:length(net_list))
 {
   network::set.vertex.attribute(net_list[[x]],attrname = 'Mandatory',
-                                value = ifelse(network.vertex.names(net_list[[x]]) %in% node_base$Name[node_base$Mandatory==1],1,0))
+                                value = ifelse(network::network.vertex.names(net_list[[x]]) %in% node_base$Name[node_base$Mandatory==1],1,0))
 }
 
 
-utility_matrix_odegree = do.call(cbind,lapply(1:network.size(net_list[[2]]),function(x) get.vertex.attribute(net_list[[2]],'Utility')))
+utility_matrix_odegree = do.call(cbind,lapply(1:network::network.size(net_list[[2]]),function(x) network::get.vertex.attribute(net_list[[2]],'Utility')))
 utility_list_odegree  = lapply(1:length(net_list),function(x) utility_matrix_odegree)
 
-utility_matrix_idegree = do.call(rbind,lapply(1:network.size(net_list[[2]]),function(x) get.vertex.attribute(net_list[[2]],'Utility')))
+utility_matrix_idegree = do.call(rbind,lapply(1:network::network.size(net_list[[2]]),function(x) network::get.vertex.attribute(net_list[[2]],'Utility')))
 utility_list_idegree  = lapply(1:length(net_list),function(x) utility_matrix_idegree)
 
 utility_list_odegree = utility_list_odegree[-1] 
