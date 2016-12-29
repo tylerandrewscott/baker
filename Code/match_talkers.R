@@ -2,75 +2,40 @@ library(tidyverse)
 library(stringr)
 library(statnet)
 library(btergm)
+
 rm(list=ls())
 
-talkers = read_csv('Input/pdfs/extraction/verbs_categorized_limited_row.csv') %>%
-  filter(!is.na(Verb)) %>%
-  dplyr::select(-X1) %>%
-  filter(!grepl('[A-Z]{4}',Subject),!grepl('^[a-z]',Subject)) %>%
-  mutate(Subject = gsub('\\.$','',Subject)) %>%
-  mutate(Meeting = gsub('\\.txt$','',Meeting)) %>%
-  filter(!grepl('Upper Baker',Subject)) %>% mutate(Year = str_extract(Meeting,'[0-9]{4}'))
+verb.type = 'communication'
 
-as.data.frame(table(talkers$Verb.Type)) %>% arrange(-Freq)
+talkers = read_csv('Input/scraped_data/participation_detail.csv')
+talkers_summary = read_csv('Input/scraped_data/participation_summary.csv')
+meeting_master = read_csv('Input/scraped_data/meeting_master.csv')
+attendance = read_csv('Input/scraped_data/attendance_summary.csv')
 
-verb_categories = c('all','communication',)
+#match(paste(talkers$Meeting,talkers$Subject_Match),paste(talkers_summary$Meeting,talkers_summary$Subject_Match))
 
+data.frame(table(talkers$Verb.Type)) %>% arrange(-Freq)
 
-#talkers = read_csv('Input/pdfs/extraction/named_entities.csv')
+verb_in_attendance_names = unlist(lapply(talkers$Verb, function(x) any(grepl(x,unique(attendance$Name)))))
 
-attendance = read_csv('Input/scraped_data/temp_cleaned_data.csv') %>% 
-  dplyr::select(-X1) %>% mutate(Year = str_extract(Meeting,'[0-9]{4}'))
-library(lubridate)
+talkers$Verb[verb_in_attendance_names]
 
 
-temp_dates = ymd(str_extract(attendance$Meeting,'[0-9]{8}$'))
-temp_dates[is.na(temp_dates)] = 
-         ymd(str_extract(attendance$Meeting[is.na(temp_dates)],'[0-9]{4}.[0-9]{1,2}.[0-9]{1,2}'))
-
-attendance$Date = temp_dates
-attendance$Dec_Date = decimal_date(attendance$Date)
-
-talkers$Date = attendance$Date[match(talkers$Meeting,attendance$Meeting)]
-talkers$Dec_Date = attendance$Dec_Date[match(talkers$Meeting,attendance$Meeting)]
 
 
-phase_break_date = c(mdy('5/8/2003'),mdy('11/24/2004'),mdy('10/17/2008'),mdy('01/01/2015'))
-phase_name = c('planning/scoping','application/settlement development',
-                                          'agency review','license implementation')
-phase_break_ddate  = decimal_date(phase_break_date)
 
-period_break_ddates = seq(decimal_date(mdy('05/01/2000')),decimal_date(mdy('11/01/2014')),0.5)
+talkers[talkers$Verb=='report'&talkers$Verb.Type=='Verbs with Predicative Complements',]
+talkers[is.na(talkers$Verb.Type),]
 
-meeting_master = attendance %>% filter(!duplicated(Meeting)) %>% 
-  dplyr::select(-Name,-Org,-Relevance,-Topic,-Count)
-
-meeting_master$Interval = findInterval(meeting_master$Dec_Date,period_break_ddates)
-meeting_master$Phase = ifelse(meeting_master$Dec_Date < phase_break_ddate[1],1,
-                              ifelse((meeting_master$Dec_Date >= phase_break_ddate[1] &
-                                      meeting_master$Dec_Date < phase_break_ddate[2]), 2,
-                              ifelse((meeting_master$Dec_Date >= phase_break_ddate[2] &
-                                       meeting_master$Dec_Date < phase_break_ddate[3]),3,4)))
-
-# library(gridExtra)
-# g1 = ggplot(meeting_master,aes(x=Dec_Date)) + geom_histogram(breaks=period_breaks$pbreaks) + 
-#   scale_x_continuous(name = '6 month intervals (May to November')+ scale_y_continuous(name = '# observed meetings')
-# g2 = ggplot(meeting_master,aes(x=as.factor(phase))) + geom_bar() + scale_y_continuous(name = '# observed meetings') +
-#   scale_x_discrete(name = 'Phase',labels=as.character(phase_breaks$phase_name))
-# grid.arrange(g1,g2)
+table(talkers$Verb[talkers$Verb.Type=='Verbs with Predicative Complements'])
 
 
-attendance = left_join(attendance,meeting_master)
-talkers = left_join(talkers,meeting_master)
+if(verb.type=='all')
+{talkers = talkers %>% filter(!duplicated(paste0(Subject,Meeting)))}
 
-match_as_present = lapply(1:length(talkers$Subject),
-                          function(x) ifelse(length( grep(talkers$Subject[x],attendance$Name[attendance$Meeting==talkers$Meeting[x]]))==0,NA,
-                                             grep(talkers$Subject[x],attendance$Name[attendance$Meeting==talkers$Meeting[x]],value=T)))
-
-
-talkers_summary = talkers %>% mutate(Subject_Match = unlist(match_as_present)) %>%
-  filter(!is.na(Subject_Match)) %>% group_by(Subject_Match,Meeting,Year,Date,Dec_Date,Interval,Phase) %>% summarise(part_count = n())
-
+if(verb.type=='communication')
+{talkers = talkers %>% filter(Verb.Type=='Verbs of Communication') %>% 
+  filter(!duplicated(paste0(Subject,Meeting)))}
 
 
 
@@ -79,8 +44,6 @@ participation_edges = do.call(rbind,lapply(1:nrow(talkers_summary),function(i)
   data.frame(Participant = talkers_summary$Subject_Match[i],Attendee= attendance$Name[attendance$Meeting==talkers_summary$Meeting[i]],
              part_count = talkers_summary$part_count[i],Meeting = talkers_summary$Meeting[i],Year = talkers_summary$Year[i],Date = talkers_summary$Date[i],
              Dec_Date = talkers_summary$Dec_Date[i],Phase = talkers_summary$Phase[i],Interval = talkers_summary$Interval[i])))
-
-
 
 interval_engagement_edges = participation_edges %>% group_by(Participant, Attendee,Interval) %>% 
   summarise(direct_engagement = sum(part_count))
@@ -92,7 +55,7 @@ node_base = attendance %>% dplyr::select(-Meeting,-Interval) %>%
   filter(!duplicated(.))
 
 node_base$Agency = ifelse(grepl('USFS|FW|DOE|FERC|UCACE|DOT|NMFS|USDA',node_base$Org),1,0)
-node_base$Consultant = ifelse(grepl('Group|Associates|Consulting|QEA|Engin',
+node_base$Consultant = ifelse(grepl('Group|Associates|Consult|QEA|Engin',
                                    node_base$Org),1,0)
 node_base$Utility = ifelse(grepl('PSE',node_base$Org),1,0)
 
@@ -236,29 +199,15 @@ h5_block =  #H5
   "nodeofactor('Utility') + nodeifactor('Utility') + nodeofactor('Mandatory') + nodeifactor('Mandatory')" 
 
 
+table(talkers$Verb[talkers$Verb.Type=='Verbs with Predicative Complements'])
+data.frame(table(talkers$Verb.Type)) %>% arrange(-Freq)
+
 full_mod = btergm(as.formula(paste(base,h2_block,h5_block,h4_block,h1_block,h5_block,sep='+')),R= Rnum)
 noh5_mod = btergm(as.formula(paste(base,h2_block,h5_block,h4_block,h1_block,sep='+')),R= Rnum)
 noh1_mod = btergm(as.formula(paste(base,h2_block,h5_block,h4_block,h5_block,sep='+')),R= Rnum)
 
 
-
-set.seed(24)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#talkers[talkers$Verb=='report'&talkers$Meeting=='2000aquatictech20000928',c('Subject','Verb','class','base_Class','Verb.Type')]
 
 testA = btergm(as.formula(paste(base,h1_block,sep='+')),R=100)
 testB = btergm(as.formula(paste(base,h3_block,sep='+')),R=100)

@@ -191,7 +191,11 @@ temp$Name[grep("David R. Montgomery",temp$Name)] = "David R. Montgomery"
 temp$Name[grep("Omroa Bhagwandin",temp$Name)] = "Omrau Bhagwandin" 
 temp$Name[temp$Name=='Kathleen W. Smayda'] = 'Kathy Smayda'
 temp$Name[grep("Bill Hebner",temp$Name)] = "Bill Hebner" 
+temp$Name[grep("Marylouise Keefe",temp$Name)] = "Mary Lou Keefe" 
+
+
 temp$Name[grep("Chuck Ebel",temp$Name)] = "Chuck Ebel" 
+temp$Name[grep("Warren.*Coughlin",temp$Name)]  = 'Warren Coughlin'
 temp$Name[grep("Ed Meyer Wayne Porter",temp$Name)] = "Wayne Porter" 
 
 temp$Name[grep("Charles Howard",temp$Name)] = "Charles Howard"
@@ -202,61 +206,65 @@ temp$Name[temp$Name=='Jamie DeVanter'|temp$Name=='Jamie Van De Vanter'] = 'Jamie
 temp$Name[temp$Name=='H. Beecher'] = 'Hal Beecher'
 temp$Name[temp$Name=="Mary Jean What"] = "Mary Jean Wiltse"
 
-
-temp$Name[temp$Name=="Jon Vanderheyden"] = "Jon VanderHayden"
-temp$Name[grep("Mierendorf",temp$Name)] = 'Bob Mierendorf'
-
-temp = temp[!grepl("Status|Discussion|Phone|Potential|Draft|Dolly Varden",temp$Name),]
-temp = temp %>% filter(!Name %in% c('W.T. Sexton',"E. Rydin",'P. Hyenstrand','R.C. Szaro','A.J. Malk','N.C. Johnson'))
-
-
-
-temp = temp[grep('\\.$',temp$Name,invert=T),]
-temp = temp[grep('Wiltse ',temp$Name,invert=T),]
-temp = temp[!(temp$Name %in% c("Reed Canarygrass" ,'Haley Dave' ,"Roy Hamilton","Burpee Hill" ,"Warner Wayne" , "Tom Facilitation", "Montgomery Watson/Harza", "Tony Forward Kathy" ,"Rick Call Daryl Hamburg","Smayda Envrionmental","Tony Contact Susan Hada",
-                             "Tony Tony Fuchs","Tony Tony Tony Tony" ,"Baker Sockeye" ,"Tony Work"   ,"Mike Tony/Ray"     ,"Tony Research","Tony Forward Kathy",
-                             "Salmonid Ruth", "La Connor","Fidalgo Flyfishers","Ryan Booth Kelly Bush","Tony Tony Fuchs","Sedro Woolley" ,
-                             "Shannon Cr." ,"Samish Jessie" ,"Rob W. What","Peregrine Falcon" ,"Point Elliott","President Bush","Baker R." ,
-                             "Chum Salmon" ,"Well Dones", "M. Vaughn" ,"Representative Larson","Preschedule Baker"  ,"Meeting Dee"  ,"Marty Draft"  ,"Andy Aesthetics" ,
-                             "Andy Need"     ,"Elizabeth Elizabeth"  ,"Steve All" , "Chris Chris"  ,  "Jay Web-Ex", "Chris Use",   "Andy—Tell Berger"  , "Burger King"," Cary"   ,"Deputy Nelson"    ,"G. Reopeners" ,
-                             "Equinox Campbell" ,"Elk Herd"   ,"Grizzly Bear"  , "Jerry Anacortes","J. A." ,"Kathleen Update",
-                             "Don Connect" ,"Design Eldridge"  ,"Teamlets Dee"  , "Vernon Hydrographs","Baker Relicense" ,
-                             "Baker Nale.","Moore/Kate Chaney","General Stockton",  "Herb Robert",  "Susan What","Alison Studley",'Dave Work','Kuzler','Scott Status',
-                             "Shannon Lakes", "Pam Connect"   ,"Mother Hen","Mark Dailyhere","Blue Tarp","Dave Talk",'Dave Vet','Dave Dave','June Mtgs',
-                             "Greg- Deputy","Greg Lind Craig Gannett","Miss Saul",'Chris Elk',
-                             "Montgomery Watson","Montgomery Watson Harza","Elk Teamlet","Jeff McGowan Lyn Wiltse","Colonel Graves",
-                             "Congressman Larson","Charles D. D. Howard","J. Largeplantsare", "Ann Ann Carol Carol Pam",
-                             'Vernon Joint',"Blue Tarp","Bob W.—Regarding" ,'Bob Helton Nick','Ira Marty',
-                             "Bob W—Draft","Bob N. Actions","Bob Need","Kathleen Test","Carl Report"     ,        "Chris What"  ,
-                             "Captain Hebner" ,"Charles Howard Model","Janis Bouma Ardis Bynum" ,
-                             "Patrick Dylan Parks","Kim Work",'Lorna Check','Nick Coordinate',"Ira Ira"   ,"Haley Draft" ,"Heidi Get",
-                             'Tony Coordinate',"Elizabeth Investigate","Vogler Brett","Bill Bill Rich",
-                             "Louis Berger Andy","Louis Berger/Meridian","Tony Get" , "Tony Queue",
-                             "Desmond Dr. S.E. Lacy","Don Gay/Fred Seavey","Tony Reserve" , "Dave Cary Jacob",
-                             "Baker Ranger" ,"Brian What",'T. Brock'  ,"Krispy Kreme","Salmonid Fry","Ann Ann Carol Carol Pam",
-                             "Tony Tony","History Hydrops" ,"Dave Pam Lyn" ,"Tony Kathy All Marty" ,
-                             "Stan Coordinate"   ,"D.B. Thompson","Connie Charlie Black","Bob Don",
-                             "Tony Add"     ,"Dan See" ,"Saint Valentine",'Chris Drechsel Lloyd'  ,"Cary Cary Feldmann"  ,  "Haley Connect",    "Tony Baker"        ,      "Tony Chris"      ,        "Tony Discussion" ,
-                             "Tony Next"  ,     "Tony Fuchs Pam Garland",  "Todd Wilbur Don Gay"  , "Tony Post"   ,'Ira Mail Stan'     ,       "Tony Reed"            ,   "Tony Report"   ,"Sedro Wooley" ,
-                             "Tony Marty" ,  "Tony From"  ,  "Tony Chris –", "Tony Status" ,"C.S. Sodhi" ,
-                             "Tony Connect", "Tony Contact Susan Hada","Tony- I",'Tony Work','Tony Sent', 'Tony What','Tony Research',
-                             'Tony Check','Tony Kathy',"Tony Coordinate Joetta","Virginia Mason",
-                             "Hayes","Stan Cc", "Cary Feldman Ron","Carol Check" , "Jeff- Cake" ,"C.J. Perrin",
-                             "Kathy Next","Kathy Kathy","Elizabeth Set" ,"Chris March" )),] 
-temp$Name = gsub('Officer |Colonel ','',temp$Name)
-temp$Name = gsub('Capt\\. |Captain |Sgt\\. ','',temp$Name)
-
 temp$Name[grepl('Mary Lou|Marylouise Keefe',temp$Name)] = 'Mary Lou Keefe'
 temp$Name[grepl('Killgore',temp$Name)] = 'Mark Killgore'
 temp$Name[grepl('Potash|Laura Martin',temp$Name)] = 'Laura Potash Martin'
 temp$Name[grepl('Jamie',temp$Name)&grepl(' Van',temp$Name)] = 'Jamie Van De Vanter'
 
+temp$Name[temp$Name=="Jon Vanderheyden"] = "Jon VanderHayden"
+temp$Name[temp$Name=="Burton Reanier"] = "Burt Reanier"
+
+temp$Name[grep("Mierendorf",temp$Name)] = 'Bob Mierendorf'
+
+temp = temp[!grepl("Status|Discussion|Phone|Potential|Draft|Dolly Varden",temp$Name),]
+temp = temp %>% filter(!Name %in% c('W.T. Sexton',"E. Rydin",'P. Hyenstrand','R.C. Szaro','A.J. Malk','N.C. Johnson'))
+
+temp[temp$Meeting=='2009rrg20090224',]
+
+temp = temp[grep('\\.$',temp$Name,invert=T),]
+temp$Name = gsub('Officer |Colonel ','',temp$Name)
+temp$Name = gsub('Capt\\. |Captain |Sgt\\. ','',temp$Name)
 
 
+#temp = temp[grep('Wiltse ',temp$Name,invert=T),]
+temp = temp %>% filter(!Name %in% c("Reed Canarygrass" ,'Haley Dave' ,"Roy Hamilton","Burpee Hill" ,"Warner Wayne" , "Tom Facilitation", "Montgomery Watson/Harza", "Tony Forward Kathy" ,"Rick Call Daryl Hamburg","Smayda Envrionmental","Tony Contact Susan Hada",
+                             "Tony Tony Fuchs","Tony Tony Tony Tony" ,"Baker Sockeye" ,"Tony Work"   ,"Mike Tony/Ray"     ,"Tony Research","Tony Forward Kathy",
+                             "Salmonid Ruth", "La Connor","Fidalgo Flyfishers","Ryan Booth Kelly Bush","Tony Tony Fuchs","Sedro Woolley" ,
+                             "Shannon Cr." ,"Samish Jessie" ,"Rob W. What","Peregrine Falcon" ,"Point Elliott","President Bush","Baker R." ,
+                             "Chum Salmon" ,"Well Dones", "M. Vaughn" ,"Representative Larson","Preschedule Baker"  ,"Meeting Dee"  ,"Marty Draft"  ,"Andy Aesthetics" ,
+                             "Andy Need"     ,"Elizabeth Elizabeth"  ,"Steve All" , "Chris Chris"  , "Kim Lane-Comments", "Jay Web-Ex", "Chris Use",   "Andy—Tell Berger"  , "Burger King"," Cary"   ,"Deputy Nelson"    ,"G. Reopeners" ,
+                             "Equinox Campbell" ,"Elk Herd"  ,"D. Drake" ,"Grizzly Bear"  , "Jerry Anacortes","J. A." ,"Kathleen Update",
+                             "Don Connect" ,"Design Eldridge"  ,"Teamlets Dee"  , "Vernon Hydrographs","Baker Relicense" ,"O'connell",
+                             "Baker Nale.","Moore/Kate Chaney","General Stockton", "Marty Tony", "Herb Robert",  "Susan What","Alison Studley",'Dave Work','Kuzler','Scott Status',
+                             "Shannon Lakes", "Pam Connect"  ,"Heather Meadows"  ,"Mother Hen","Mark Dailyhere","Blue Tarp","Census Scott" ,
+                             "Dave Talk",'Dave Vet','Dave Dave','June Mtgs',"Emily Chris","Arnie Have Jacob","Scott Jan","K. Howard",
+                             "Greg- Deputy","Greg Lind Craig Gannett","Miss Saul",'Chris Elk',"Tony Fuchs Pam Garland","M.L. Rosenau",
+                             "Montgomery Watson","Montgomery Watson Harza","Elk Teamlet","Jeff McGowan Lyn Wiltse","Colonel Graves",
+                             "Congressman Larson","Charles D. D. Howard","J. Largeplantsare", "Ann Ann Carol Carol Pam","J. Shaw",
+                             "Paul Assessment"  ,"Laura Laurel","Jim Passage","J. Shaw" ,"Haley Don","Doug Marty Jacob"   ,"Dave Coordinate",
+                             'Vernon Joint',"Blue Tarp","Bob W.—Regarding","Robin Wendy" ,'Bob Helton Nick','Ira Marty',
+                             "Bob W—Draft","Bob N. Actions","Bob Need","Kathleen Test","Carl Report"     ,    "Elizabeth Jan"  ,    "Chris What"  ,
+                             "Captain Hebner" ,"Charles Howard Model","Janis Bouma Ardis Bynum" ,"Nick Develop",
+                             "Patrick Dylan Parks","Kim Work",'Lorna Check','Nick Coordinate',"Ira Ira"   ,"Haley Draft" ,"Heidi Get",
+                             'Tony Coordinate',"Elizabeth Investigate","Vogler Brett","Bill Bill Rich",
+                             "Louis Berger Andy","Louis Berger/Meridian","Tony Get" , "Tony Queue",
+                             "Desmond Dr. S.E. Lacy","Don Gay/Fred Seavey","Tony Reserve" , "Dave Cary Jacob",
+                             "Baker Ranger" ,"Brian What",'T. Brock'  ,"Krispy Kreme","Salmonid Fry","Ann Ann Carol Carol Pam",
+                             "Tony Tony","History Hydrops" ,"Dave Pam Lyn" ,"Tony Kathy All Marty","Lyn Ira Ray" ,
+                             "Stan Coordinate" ,"Oren Dame","D.B. Thompson","Connie Charlie Black","Bob Don",
+                             "Tony Add"     ,"Dan See" , "Saint Valentine",'Chris Drechsel Lloyd'  ,"Cary Cary Feldmann"  ,  "Haley Connect",    "Tony Baker"        ,   
+                             "Tony Chris"      ,        "Tony Discussion" ,"Ira Mail","Mike See",
+                             "Tony Next"  , "Ray Tony", "Vernon Chris", "Tony Fuchs Pam Garland",  "Todd Wilbur Don Gay"  , "Tony Post"   ,'Ira Mail Stan'     ,  
+                             "Tony Reed"  ,  "Tony Report"   ,"Sedro Wooley" ,"Bob K. Cary",
+                             "Jim Neiland","Jim Kneeland",
+                             "Tony Marty" ,  "Tony From" ,  "Ann Share","Tony Chris –", "Tony Status" ,"C.S. Sodhi" ,
+                             "Tony Connect", "Tony Contact Susan Hada","Tony- I",'Tony Work','Tony Sent', 'Tony What','Tony Research',
+                             'Tony Check','Tony Kathy',"Tony Coordinate Joetta","Virginia Mason","Elizabeth Jessie Piper",
+                             "Hayes","Stan Cc", "Cary Feldman Ron","Carol Check" , "Jeff- Cake" ,"C.J. Perrin",
+                             "Kathy Next","Kathy Kathy","Elizabeth Set" ,"Chris March" ,"Howard Hansen","Howard Hanson","Eric Markell",
+                             "Lyn Wiltse Ron Campbell","Ron Mcbride","Louis Berger","Curtis Spalding"))
 
 
-temp[temp$Name=="Ed Meyer Wayne Porter" ,]
-temp$Name[temp$Meeting =='2001fish20011211']
 
 temp = temp[!grepl('Rempel',temp$Name),]
 temp = temp[!grepl('•',temp$Name),]
@@ -294,6 +302,8 @@ temp$Name[temp$Name =="John Shultz"] = 'John Schultz'
 temp$Name[grep("Bill Heinck",temp$Name)] = "Bill Heinck"
 temp$Name[grep("De Coteau",temp$Name)] = "Ernie DeCoteau"
 temp$Name[grep("Dayna Matthews",temp$Name)] = "Dayna Matthews"
+temp$Name[grep("Rob Whitlam",temp$Name)] = "Robert Whitlam"
+
 temp$Name[grep("Chris Hansen",temp$Name)] = "Chris Hansen-Murray"
 temp$Name[grep("Gordy Iverson",temp$Name)] = "Gordon Iverson"
 temp$Name[grep("Brenda Werden",temp$Name)] = "Brenda Warden"
@@ -332,27 +342,128 @@ temp$Topic[temp$Topic %in% c('bricc','solution','process','brcc')] = 'admin'
 temp = temp[!grepl('^ ',temp$Name),]
 
 library(pbapply)
-
 temp$Name = str_to_title(temp$Name)
-
-
 name_table = pblapply(temp$Name,function(x) table(agrep(x,temp$Name,max.distance =list(all=0.1,insertions=1,deletions=1,substitutions=1),value=T)))
 modal_name = sapply(name_table,function(x) names(x)[x==max(x)][1],simplify=T)
 temp$Name = unlist(modal_name)
 
+temp$Org[temp$Org=='NCCC'] = 'North Cascades Conservation Council'
+temp$Org[grepl('NOAA',temp$Org)] = 'NOAA'
+temp$Org[grepl('DOT',temp$Org)] = 'WDOT'
+temp$Org[grepl('HRA',temp$Org)] = 'HRA'
+temp$Org[grepl('Biota',temp$Org)] = 'Biota Pacific'
+temp$Org[grepl("D\\.C\\.|D\\.C|Portland OR",temp$Org)] = "FERC"
+temp$Org[grepl("Louis Berger",temp$Org)] = "Louis Berger Group"
+temp$Org[grepl('Sherif',temp$Org)&grepl('Whatcom',temp$Org)] = "Whatcom County Sheriff's Office"
+temp$Org[temp$Org=='Univ'] = 'UW'
+temp$Org[temp$Org=='Real'] = 'PSE'
+temp$Org[temp$Name=='Donald S. Dixon'] = 'Skagit County Public Works'
+temp$Org[temp$Name=='Tom Spicher'] = 'Hydro Y.E.S.'
+
+temp$Org[temp$Name=='James Roberts'] = 'Sauk-Suiattle Indian Tribe'
+temp$Org[grep('Corps|UCACE',temp$Org)] = 'USACE'
 
 
+prob_not_org = unlist(lapply(temp$Org,function(x) any(grepl(x,temp$Name))))
+temp$Org[prob_not_org] = '99999'
+temp$Org[temp$Org=='Team'] = '99999'
+temp$Org[temp$Org=='Phone'] = '99999'
+temp$Org[temp$Org=='Director'] = '99999'
+temp$Org[temp$Org=='Note'] = '99999'
+temp$Org[temp$Org=='Project'] = '99999'
+temp$Org[temp$Org=='PM for this project'] = '99999'
+temp$Org[grepl('425|360|[0-9]{4}',temp$Org)] = '99999'
 
 org_table_byname = pblapply(temp$Name,function(x) as.data.frame(table(temp$Org[temp$Name==x])) %>% arrange(-Freq) %>% mutate(Var1 = as.character(Var1)))
 modal_org = lapply(org_table_byname,function(x) ifelse(x$Var1[1]!='99999',x$Var1[1],x$Var1[2]))
+
 temp$Org = unlist(modal_org)
-
 temp = temp %>% arrange(Meeting,Name,Relevance) %>% filter(!duplicated(paste0(Meeting,Name)))
-
 write.csv(temp,'Input/scraped_data/temp_cleaned_data.csv')
 
+library(tidyverse)
+library(stringr)
+library(statnet)
+library(btergm)
+rm(list=ls())
+
+talkers = read_csv('Input/pdfs/extraction/verbs_categorized_multi_row.csv') %>%
+  filter(!is.na(Verb)) %>%
+  dplyr::select(-X1) %>%
+  filter(!grepl('[A-Z]{4}',Subject),!grepl('^[a-z]',Subject)) %>%
+  mutate(Subject = gsub('\\.$','',Subject)) %>%
+  mutate(Meeting = gsub('\\.txt$','',Meeting)) %>%
+  filter(!grepl('Upper Baker',Subject)) %>% mutate(Year = str_extract(Meeting,'[0-9]{4}'))
+
+#verb_categories = c('all','communication')
+#talkers = read_csv('Input/pdfs/extraction/named_entities.csv')
+
+attendance = read_csv('Input/scraped_data/temp_cleaned_data.csv') %>% 
+  dplyr::select(-X1) %>% mutate(Year = str_extract(Meeting,'[0-9]{4}'))
+library(lubridate)
+
+temp_dates = ymd(str_extract(attendance$Meeting,'[0-9]{8}$'))
+temp_dates[is.na(temp_dates)] = 
+  ymd(str_extract(attendance$Meeting[is.na(temp_dates)],'[0-9]{4}.[0-9]{1,2}.[0-9]{1,2}'))
+
+attendance$Date = temp_dates
+attendance$Dec_Date = decimal_date(attendance$Date)
+
+talkers$Date = attendance$Date[match(talkers$Meeting,attendance$Meeting)]
+talkers$Dec_Date = attendance$Dec_Date[match(talkers$Meeting,attendance$Meeting)]
+
+phase_break_date = c(mdy('5/8/2003'),mdy('11/24/2004'),mdy('10/17/2008'),mdy('01/01/2015'))
+phase_name = c('planning/scoping','application/settlement development',
+               'agency review','license implementation')
+phase_break_ddate  = decimal_date(phase_break_date)
+period_break_ddates = seq(decimal_date(mdy('05/01/2000')),decimal_date(mdy('11/01/2014')),0.5)
+
+meeting_master = attendance %>% filter(!duplicated(Meeting)) %>% 
+  dplyr::select(-Name,-Org,-Relevance,-Topic,-Count)
+meeting_master$Interval = findInterval(meeting_master$Dec_Date,period_break_ddates)
+meeting_master$Phase = ifelse(meeting_master$Dec_Date < phase_break_ddate[1],1,
+                              ifelse((meeting_master$Dec_Date >= phase_break_ddate[1] &
+                                        meeting_master$Dec_Date < phase_break_ddate[2]), 2,
+                                     ifelse((meeting_master$Dec_Date >= phase_break_ddate[2] &
+                                               meeting_master$Dec_Date < phase_break_ddate[3]),3,4)))
 
 
+
+# library(gridExtra)
+# g1 = ggplot(meeting_master,aes(x=Dec_Date)) + geom_histogram(breaks=period_breaks$pbreaks) + 
+#   scale_x_continuous(name = '6 month intervals (May to November')+ scale_y_continuous(name = '# observed meetings')
+# g2 = ggplot(meeting_master,aes(x=as.factor(phase))) + geom_bar() + scale_y_continuous(name = '# observed meetings') +
+#   scale_x_discrete(name = 'Phase',labels=as.character(phase_breaks$phase_name))
+# grid.arrange(g1,g2)
+
+attendance = left_join(attendance,meeting_master)
+talkers = left_join(talkers,meeting_master)
+
+
+match_as_present = lapply(1:length(talkers$Subject),
+                          function(x) ifelse(length( grep(talkers$Subject[x],attendance$Name[attendance$Meeting==talkers$Meeting[x]]))==0,NA,
+                                             grep(talkers$Subject[x],attendance$Name[attendance$Meeting==talkers$Meeting[x]],value=T)))
+talkers = talkers %>% mutate(Subject_Match = unlist(match_as_present)) %>%
+  filter(!is.na(Subject_Match))
+
+talkers_summary = talkers %>%
+  filter(!is.na(Subject_Match)) %>% 
+  filter(!duplicated(paste(Subject_Match,Meeting,Verb))) %>%
+  group_by(Subject_Match,Meeting,Year,Date,Dec_Date,Interval,Phase) %>% 
+  summarise(part_count = n())
+
+
+#save summary of talking
+write.csv(talkers,'Input/scraped_data/participation_detail.csv')
+write.csv(talkers_summary,'Input/scraped_data/participation_summary.csv')
+write.csv(attendance,'Input/scraped_data/attendance_summary.csv')
+write.csv(meeting_master,'Input/scraped_data/meeting_master.csv')
+
+# for (uq in unique(temp$Name))
+# {
+#   tt = unique(agrep(uq,temp$Name,ignore.case = T,max.distance =list(insertions=7,deletions=0,substitutions=0),value=T))
+#   if(length(tt)>1){print(tt)}
+# }
 
 # 
 # for (name in unique(temp$Name))
