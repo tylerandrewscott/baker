@@ -264,8 +264,11 @@ temp = temp %>% filter(!Name %in% c("Reed Canarygrass" ,'Haley Dave' ,"Roy Hamil
                              "Kathy Next","Kathy Kathy","Elizabeth Set" ,"Chris March" ,"Howard Hansen","Howard Hanson","Eric Markell",
                              "Lyn Wiltse Ron Campbell","Ron Mcbride","Louis Berger","Curtis Spalding"))
 
-
-
+temp = temp[!grepl('Send$',temp$Name),]
+temp = temp[!grepl('Share$',temp$Name),]
+temp = temp[!grepl('Stay$',temp$Name),]
+temp = temp[!grepl('Head$',temp$Name),]
+temp = temp[!grepl('Clean$',temp$Name),]
 temp = temp[!grepl('Rempel',temp$Name),]
 temp = temp[!grepl('•',temp$Name),]
 temp = temp[!grepl(' Work',temp$Name),]
@@ -412,7 +415,7 @@ attendance$Dec_Date = decimal_date(attendance$Date)
 talkers$Date = attendance$Date[match(talkers$Meeting,attendance$Meeting)]
 talkers$Dec_Date = attendance$Dec_Date[match(talkers$Meeting,attendance$Meeting)]
 
-phase_break_date = c(mdy('5/8/2003'),mdy('11/24/2004'),mdy('10/17/2008'),mdy('01/01/2015'))
+phase_break_date = c(mdy('5/8/2003'),mdy('11/24/2004'),mdy('10/17/2008'))#,mdy('01/01/2015'))
 phase_name = c('planning/scoping','application/settlement development',
                'agency review','license implementation')
 phase_break_ddate  = decimal_date(phase_break_date)
@@ -421,12 +424,21 @@ period_break_ddates = seq(decimal_date(mdy('05/01/2000')),decimal_date(mdy('11/0
 meeting_master = attendance %>% filter(!duplicated(Meeting)) %>% 
   dplyr::select(-Name,-Org,-Relevance,-Topic,-Count)
 meeting_master$Interval = findInterval(meeting_master$Dec_Date,period_break_ddates)
-meeting_master$Phase = ifelse(meeting_master$Dec_Date < phase_break_ddate[1],1,
-                              ifelse((meeting_master$Dec_Date >= phase_break_ddate[1] &
-                                        meeting_master$Dec_Date < phase_break_ddate[2]), 2,
-                                     ifelse((meeting_master$Dec_Date >= phase_break_ddate[2] &
-                                               meeting_master$Dec_Date < phase_break_ddate[3]),3,4)))
+meeting_master = meeting_master %>% 
+  mutate(Phase = ifelse(Interval<=7,1,ifelse(Interval<=10,2,ifelse(Interval<=18,3,4))))
 
+
+
+
+# 
+# 
+# 
+# meeting_master$Phase = ifelse(meeting_master$Dec_Date < phase_break_ddate[1],1,
+#                               ifelse((meeting_master$Dec_Date >= phase_break_ddate[1] &
+#                                         meeting_master$Dec_Date < phase_break_ddate[2]), 2,
+#                                      ifelse((meeting_master$Dec_Date >= phase_break_ddate[2] &
+#                                                meeting_master$Dec_Date < phase_break_ddate[3]),3,4)))
+# 
 
 
 # library(gridExtra)
@@ -440,8 +452,11 @@ attendance = left_join(attendance,meeting_master)
 talkers = left_join(talkers,meeting_master)
 
 
+
+
+
 match_as_present = lapply(1:length(talkers$Subject),
-                          function(x) ifelse(length( grep(talkers$Subject[x],attendance$Name[attendance$Meeting==talkers$Meeting[x]]))==0,NA,
+                          function(x) ifelse(length(grep(talkers$Subject[x],attendance$Name[attendance$Meeting==talkers$Meeting[x]]))==0,NA,
                                              grep(talkers$Subject[x],attendance$Name[attendance$Meeting==talkers$Meeting[x]],value=T)))
 talkers = talkers %>% mutate(Subject_Match = unlist(match_as_present)) %>%
   filter(!is.na(Subject_Match))
