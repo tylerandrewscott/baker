@@ -182,7 +182,7 @@ utility_list_idegree = utility_list_idegree[-1]
 
 gwid_decay = gwod_decay = 2
 gwesp_decay = 2
-base = "net_list[-1] ~ edges  + mutual + gwidegree(gwd_decay,fixed=T) +  gwodegree(gwd_decay,fixed=T) + gwesp(gwesp_decay,fixed=T)"
+base = "net_list[-1] ~ edges  + mutual + gwidegree(gwid_decay,fixed=T) +  gwodegree(gwod_decay,fixed=T) + gwesp(gwesp_decay,fixed=T)"
 
 h1_block = #H1
   "edgecov(dynamic_list_prior)+ 
