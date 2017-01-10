@@ -210,12 +210,12 @@ gwd_seq = seq(0.25,3,0.25)
 gwd_combos = expand.grid(gwd_seq,gwd_seq,gwd_seq) %>% rename(gwod_shape = Var1,gwid_shape=Var2,gwesp_shape=Var3)
 
 library(parallel)
-
+Rnum_sim = 100
 gwd_sensitivity_mods = mclapply(1:1000, function(x) {
   gwod_decay = runif(1,0,3)
   gwid_decay = runif(1,0,3)
   gwesp_decay = runif(1,0,3)
-  btergm(as.formula(paste(base,h1_block,h2_block,h3_block,h4_block,h5_block,sep='+')),R= Rnum)},mc.preschedule = TRUE,mc.set.seed = 24,mc.cores = 10)
+  btergm(as.formula(paste(base,h1_block,h2_block,h3_block,h4_block,h5_block,sep='+')),R= Rnum_sim)},mc.preschedule = TRUE,mc.set.seed = 24,mc.cores = 10)
 
 
 save.image('Scratch/temp_btergm_results.RData')
