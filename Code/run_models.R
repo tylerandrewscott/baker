@@ -27,7 +27,7 @@ talkers = talkers %>% filter(!is.na(Verb.Type),!Verb.Type %in% drop_list)
 #                     function(x) any(grepl(paste0(x,'$|','^',x),unique(attendance$Name)))))
 
 #as.data.frame(table(talkers$Verb.Type)) %>% arrange(-Freq)
-Rnum = 1000
+Rnum = 100
 library(stringr)
 
 verb_cats = c('all','Verbs of Communication','Verbs of Creation and Transformation','Verbs of Change of Possession','other')
@@ -156,6 +156,14 @@ for (x in 2:length(net_list))
                                 value = ifelse(network::network.vertex.names(net_list[[x]]) %in% node_base$Name[node_base$Mandatory==1],1,0))
 }
 
+node_base$Mandatory_or_Util = ifelse(grepl("NMFS|USFS|WDOE",node_base$Org)|node_base$Utility==1,1,0)
+
+for (x in 2:length(net_list))
+{
+  network::set.vertex.attribute(net_list[[x]],attrname = 'Mandatory_or_Util',
+                                value = ifelse(network::network.vertex.names(net_list[[x]]) %in% node_base$Name[node_base$Mandatory_or_Util==1],1,0))
+}
+
 utility_matrix_odegree = do.call(cbind,lapply(1:network::network.size(net_list[[2]]),function(x) network::get.vertex.attribute(net_list[[2]],'Utility')))
 utility_list_odegree  = lapply(1:length(net_list),function(x) utility_matrix_odegree)
 utility_matrix_idegree = do.call(rbind,lapply(1:network::network.size(net_list[[2]]),function(x) network::get.vertex.attribute(net_list[[2]],'Utility')))
@@ -172,7 +180,7 @@ utility_list_idegree = utility_list_idegree[-1]
 # signatory_list_odegree = signatory_list_odegree[-1] 
 # signatory_list_idegree = signatory_list_idegree[-1]
 
-gwd_decay = 2
+gwid_decay = gwod_decay = 2
 gwesp_decay = 2
 base = "net_list[-1] ~ edges  + mutual + gwidegree(gwd_decay,fixed=T) +  gwodegree(gwd_decay,fixed=T) + gwesp(gwesp_decay,fixed=T)"
 
@@ -187,272 +195,32 @@ timecov(x = stability_list_prior,  minimum = 18, transform = function(t) 1)"
 h4_block = #h5
   "timecov(x = utility_list_odegree[-1],function(t) t)"
 h5_block =  #H5
-  "nodeofactor('Utility') + nodeifactor('Utility') + nodeofactor('Mandatory') + nodeifactor('Mandatory')" 
+  "nodeofactor('Mandatory_or_Util') + nodeifactor('Mandatory_or_Util')" 
 library(parallel)
 
-full_mod = btergm(as.formula(paste(base,h2_block,h5_block,h4_block,h1_block,h3_block,sep='+')),
-                  R= Rnum,parallel='multicore',verbose=T)
+Rnum = 10000
+full_mod = btergm(as.formula(paste(base,h1_block,h2_block,h3_block,h4_block,h5_block,sep='+')),R= Rnum)
+
+#btergm(as.formula(paste(base,h2_block,sep='+'),R=100)
+blocks = c('h1_block','h2_block','h3_block','h4_block','h5_block')
+block2 = expand.grid(blocks,blocks) %>% filter(Var1!=Var2)
+restricted_results = lapply(blocks,function(b) try(btergm(as.formula(paste(base,get(as.character(b)),sep='+')),R= Rnum)))
+
+gwd_seq = seq(0.25,3,0.25)
+gwd_combos = expand.grid(gwd_seq,gwd_seq,gwd_seq) %>% rename(gwod_shape = Var1,gwid_shape=Var2,gwesp_shape=Var3)
+
+library(parallel)
+
+gwd_sensitivity_mods = mclapply(1:1000, function(x) {
+  gwod_decay = runif(1,0,3)
+  gwid_decay = runif(1,0,3)
+  gwesp_decay = runif(1,0,3)
+  btergm(as.formula(paste(base,h1_block,h2_block,h3_block,h4_block,h5_block,sep='+')),R= Rnum)},mc.preschedule = TRUE,mc.set.seed = 24,mc.cores = 10)
+
 
 save.image('Scratch/temp_btergm_results.RData')
 
 
+#lapply(1:nrow(block2),function(b) try(btergm(as.formula(paste(base,get(as.character(block2$Var1[b])),get(as.character(block2$Var2[b])),sep='+')),R= 10)))
 
-
-
-
-noh5_mod = btergm(as.formula(paste(base,h2_block,h5_block,h4_block,h1_block,sep='+')),R= Rnum)
-noh1_mod = btergm(as.formula(paste(base,h2_block,h5_block,h4_block,h5_block,sep='+')),R= Rnum)
-
-
-
-
-
-#talkers[talkers$Verb=='report'&talkers$Meeting=='2000aquatictech20000928',c('Subject','Verb','class','base_Class','Verb.Type')]
-
-testA = btergm(as.formula(paste(base,h1_block,sep='+')),R=100)
-testB = btergm(as.formula(paste(base,h3_block,sep='+')),R=100)
-testC = btergm(as.formula(paste(base,h1_block,h3_block,sep='+')),R=100)
-
-summary(testA)
-summary(testB)
-summary(testC)
-
-as.formula(paste(base,h2_block,sep='+'))
-as.formula(paste(base,h1_block,h2_block,sep='+'))
-
-period_break_ddates
-
-
-summary(test2)
-,R=10000)
-
-
-twopath +             
-  nodecov('High_Resource')+
-  nodecov('Core_Order_Prior')+
-  nodecov('High_Resource_x_Core_Order_Prior')+
-  nodeofactor('Utility') + nodeifactor('Utility') +
-  memory(type = "autoregression", lag = 1) +
-  edgecov(dynamic_list_prior)+ 
-  timecov(x = dynamic_list_prior,  minimum = 8, transform = function(t) 1),R=100)
-
-
-
-
-
-test2 = btergm(net_list[-1] ~ edges  + 
-                 #Controls
-                 mutual + gwidegree(2,fixed=T) +  gwodegree(2,fixed=T) + gwesp(1,fixed=T) + 
-                 
-                 #edgecov(utility_list_odegree) + 
-                 #edgecov(utility_list_idegree) + 
-                 #H5
-                 nodeofactor('Signatory') + nodeifactor('Signatory') + 
-                 #H3
-                 edgecov(stability_list_prior) +  
-                 #memory(type = "autoregression", lag = 1) +
-                 #H1
-                 edgecov(dynamic_list_prior)+ 
-                 timecov(x = dynamic_list_prior,  minimum = 8, transform = function(t) 1) +
-                 #H4
-                 timecov(x = utility_list_odegree[-1],function(t) t),R=10000)
-
-
-?memory
-library(texreg)
-library(gwdegree)
-gwdegree()
-plotreg(test2)
-
-summary(test2)
-
-
-lapply(net_list,function(x) degreedist(x))
-
-
-
-
-
-
-summary(test)
-data('knecht')
-demographics
-preprocess(node_base$Utility,net_list,lag=F,covariate = T)
-
-
-
-sex.cov <- preprocess(demographics$sex, primary.cov, friendship,
-                      + lag = FALSE, covariate = TRUE)
-
-
-timecov(x = dynamic_list_prior,  transform = function(t) 1) ,R = 1000)
-
-
-
-
-
-degreedist(net_list[[3]])
-
-
-
-test@time.steps
-
-network::get.vertex.attribute(net_list[[3]],'Org')
-
-net_list[[3]]
-summary(test)
-
-
-colSums(is.na(test@bootsamp))
-sum(is.na(test@effects))
-
-#edgecov(yearly_outdegree_prior) + edgecov(yearly_attendance_prior)+
-#edgecov(yearly_outdegree_x_attendance_prior) +
-#  edgecov(yearly_outdegree_x_attendance_x_highres_prior) +
-edgecov(dynamic_list_prior) + 
-  timecov(x = dynamic_list_prior, minimum = 4, transform = function(t) 1) ,R = 100)
-
-summary(test)
-
-
-
-?memory
-
-{
-  if (x==1){base_matrix}
-  else {ifelse(as.sociomatrix(net_list[[x-1]])>0,1,-1)}
-}
-
-
-ifelse(x==1,base_matrix,ifelse(as.sociomatrix(net_list[[x-1]])>0,1,-1)))
-
-
-lapply(net_list,function(x) table(as.sociomatrix(x)>0))
-lapply(dynamic_list,function(x) table(x>0))
-
-
-
-
-
-
-test = lapply(1:length(net_list),function(i){
-  if (i == 1) {base_matrix}
-  ifelse(as.sociomatrix(net_list[i-1])>0,1,-1)})
-lapply(test,sum)
-
-ifelse(net_array[,,(x-1)]>0,1,-1))
-
-
-
-sum(as.sociomatrix(net_list[[1]]))
-sum(ifelse(dynamic_list[[2]]<0,0,dynamic_list[[2]]))
-
-dynamic_list[[1]][TRUE]<- (-1)
-dynamic_l
-
-
-library(btergm)
-dynamic_list[[1]]
-set.seed(seed = 24)
-
-
-
-
-
-
-
-
-
-test = lapply(net_list,as.sociomatrix)
-test = lapply(test,function(x) ifelse(x>0,1,-1))
-
-cbind(sapply(test,sum),
-      sapply(dynamic_list,sum))
-
-data("knecht")
-lapply(friendship,dim)
-
-
-
-test = preprocess(lapply(net_list,as.sociomatrix),lag=TRUE,covariate=TRUE,
-                  memory='dynamic')
-
-class(test)
-
-
-mem <- preprocess(friendship, primary, demographics$sex,
-                  lag = TRUE, covariate = TRUE, memory = "dynamic",
-                  na = NA, na.method = "fillmode", structzero = 10,
-                  structzero.method = "remove")
-
-
-?`btergm-terms`
-btergm(net_list~edges + timecov() + mutual,R = 100)
-
-
-
-test = ifelse(net_array[,,1]>0,1,-1)
-
-
-
-In the list of matrices, include a 1 whenever the previous dyad also had a 1 
-and -1 if the previous dyad had a 0. 
-
-
-See the attached paper for the mathematical details of the change statistic 
-for dyadic dynamic.
-
-You can include this list of matrices via an edgecov term.
-You can check if you did it right by comparing the results to a 
-model with the built-in memory term. 
-After that, include a timecov model term (see ?"btergm-terms" for details) with the following specification 
-to do the actual interaction (where 'ds' indicates the list of dyadic dynamic matrices):
-  
-  timecov(x = ds, minimum = 6, transform = function(t) 1)
-
-This includes two model terms: the main effect for time, 
-where 0 is used for t=2 to t=5 and 1 is used for t=6 to t=10, and the 
-interaction between this term and the dyadic dynamic change statistic.
-?timecov
-
-
-library(btergm)
-
-
-require(btergm)
-
-test_plot = placement %>% as.data.frame(.) %>% filter(V3==3) %>% mutate(V1 = V1-1,V2 = V2-1)
-# Load package
-library(networkD3)
-
-simpleNetwork(net_list[[1]])
-
-networkData <- test_plot
-data("MisLinks")
-
-
-
-
-forceNetwork(Links = test_plot, Source = 'V1',Target = 'V2',Nodes = data.frame(people = 0:total_people-1,group=1),NodeID = 'people',Group='group')
-
-
-sankeyNetwork(Links = test_plot, Source = 'V1',Target = 'V2',Nodes = data.frame(people = 0:total_people-1,group=1),NodeID = 'people',Group='group')
-
-Links = test_plot, Nodes = Energy$nodes, Source = "source",
-Target = "target", Value = "value", NodeID = "name",
-units = "TWh", fontSize = 12, nodeWidth = 30)
-
-
-
-# Plot
-simpleNetwork(networkData)
-
-
-?networkDynamic
-
-class(net_list)
-
-?btergm::`tergm-terms`
-
-?network
 
