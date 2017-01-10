@@ -27,7 +27,7 @@ talkers = talkers %>% filter(!is.na(Verb.Type),!Verb.Type %in% drop_list)
 #                     function(x) any(grepl(paste0(x,'$|','^',x),unique(attendance$Name)))))
 
 #as.data.frame(table(talkers$Verb.Type)) %>% arrange(-Freq)
-Rnum = 100
+Rnum = 1000
 library(stringr)
 
 verb_cats = c('all','Verbs of Communication','Verbs of Creation and Transformation','Verbs of Change of Possession','other')
@@ -198,13 +198,13 @@ h5_block =  #H5
   "nodeofactor('Mandatory_or_Util') + nodeifactor('Mandatory_or_Util')" 
 library(parallel)
 
-Rnum = 10000
+
 full_mod = btergm(as.formula(paste(base,h1_block,h2_block,h3_block,h4_block,h5_block,sep='+')),R= Rnum)
 
 #btergm(as.formula(paste(base,h2_block,sep='+'),R=100)
 blocks = c('h1_block','h2_block','h3_block','h4_block','h5_block')
 block2 = expand.grid(blocks,blocks) %>% filter(Var1!=Var2)
-restricted_results = lapply(blocks,function(b) try(btergm(as.formula(paste(base,get(as.character(b)),sep='+')),R= Rnum)))
+restricted_results = mclapply(blocks,function(b) try(btergm(as.formula(paste(base,get(as.character(b)),sep='+')),R= Rnum)),mc.preschedule = T,mc.cores = length(blocks),mc.set.seed = 24)
 
 gwd_seq = seq(0.25,3,0.25)
 gwd_combos = expand.grid(gwd_seq,gwd_seq,gwd_seq) %>% rename(gwod_shape = Var1,gwid_shape=Var2,gwesp_shape=Var3)
