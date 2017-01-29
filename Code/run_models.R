@@ -1,6 +1,6 @@
 rm(list=ls())
 
-Rnum = 10
+Rnum = 1000
 Rnum_sim = 100
 gwd_sim_reps= 1000
 verb.type = 'all'
@@ -177,6 +177,8 @@ utility_list_idegree = utility_list_idegree[-1]
 
 
 
+
+
 # signatory_matrix_odegree = do.call(cbind,lapply(1:network.size(net_list[[2]]),function(x) get.vertex.attribute(net_list[[2]],'Signatory')))
 # signatory_list_odegree  = lapply(1:length(net_list),function(x) signatory_matrix_odegree)
 # 
@@ -189,118 +191,23 @@ utility_list_idegree = utility_list_idegree[-1]
 gwid_decay = gwod_decay = 2
 gwesp_decay = 2
 
-test = btergm(net_list[-1] ~ edges  + mutual + isolates +
-  timecov(transform = function(t) t) +
-    timecov(transform = function(t) t^2) + 
-    timecov(transform = function(t) t^3),R=100)
-
-summary(test)
-
-networks <- list()
-for(i in 1:10){            # create 10 random networks with 10 actors
-  mat <- matrix(rbinom(100, 1, .25), nrow = 10, ncol = 10)
-  diag(mat) <- 0           # loops are excluded
-  nw <- network(mat)       # create network object
-  networks[[i]] <- nw      # add network to the list
-}
-
-btergm(networks ~ edges + edgecov(covariates),R =100)
-covariates <- list()
-for (i in 1:10) {          # create 10 matrices as covariate
-  mat <- matrix(rnorm(100), nrow = 10, ncol = 10)
-  covariates[[i]] <- mat   # add matrix to the list
-}
-
-
 
 form0A = net_list[-1] ~ edges  + mutual + isolates + gwidegree(gwid_decay,fixed=T) +  
   gwodegree(gwod_decay,fixed=T) + gwesp(gwesp_decay,fixed=T) + timecov(transform = function(t) t)
 
-test = timecov(net_list[-1], minimum = 1, 
-        transform = function(t) 1 + (1 * t) + (1 * t^2),
-        onlytime = FALSE)
-
-
-
 form0B = net_list[-1] ~ edges  + mutual + isolates + gwidegree(gwid_decay,fixed=T) +  gwodegree(gwod_decay,fixed=T) + 
   gwesp(gwesp_decay,fixed=T) + 
-  timecov(transform = function(t) 1 + (1 * t) + (1 * t^2))
+  timecov(transform = function(t) t) +
+  timecov(transform = function(t) t^2)
 
-
-  timecov(transform = function(t) t + t^2)
-
-
-
-iso_mats_dropfirst = iso_list[-1]
-
-
-iso_list = lapply(net_list,function(x) as.sociomatrix(x)*0)
-which_isols = lapply(net_list,isolates)
-iso_list = iso_list[[2]]
-which_isols = which_isols[[2]]
-
-for (i in 1:nrow(iso_list))
-{
-  for (j in 1:ncol(iso_list))
-  {
-   iso_list[i,j] =  ifelse(i %in% which_isols & j %in% which_isols,2,ifelse(i %in% which_isols | j %in% which_isols,1,0))
-  }
-}
-
-test  = ergm(net_list[[2]] ~ edges + isolates)
-
-test2 = ergm(net_list[[2]] ~ edges + edgecov(iso_list))
-
-
-InitErgmTerm.isolates <- function(nw, arglist, ...) {
-  ### Check the network and arguments to make sure they are appropriate.
-  a <- check.ErgmTerm(nw, arglist, directed=NULL, bipartite=NULL,
-                      varnames = NULL,
-                      vartypes = NULL,
-                      defaultvalues = list(),
-                      required = NULL)
-  ### Construct the list to return
-  list(name="isolates",                               #name: required
-       coef.names = "isolates",                       #coef.names: required
-       emptynwstats = network.size(nw), # When nw is empty, isolates=n, not 0,
-       minval = 0,
-       maxval = network.size(nw),
-       conflicts.constraints="degreedist"
-  )                                                               
-}
+form0C = net_list[-1] ~ edges  + mutual + isolates + gwidegree(gwid_decay,fixed=T) +  gwodegree(gwod_decay,fixed=T) + 
+  gwesp(gwesp_decay,fixed=T) + 
+  timecov(transform = function(t) t) +
+  timecov(transform = function(t) t^2) +
+  timecov(transform = function(t) t^3)
 
 
 
-
-  
-{iso_list[[i]][c(which_isols[[i]]),] <- 1; iso_list[[i]][,c(which_isols[[i]])] <- 1}
-
-
-
-
-which_isols[[2]]
-rowSums(iso_list[[2]])
-
-summary(test)
-summary(test2)
-
-
-iso_mats = lapply(1:length(iso_list),function(x) {iso_mats[[x]][,c(which_isols[[x]])] <<- 1})
-
-isolates(net_list[[2]])
-summary(test)
-summary(test2)
-  
-iso_list = lapply(net_list,function(x) ifelse(rowSums(as.sociomatrix(x))>0,0,1))
-
-sum(iso_list[[2]])
-
-summary(net_list[[31]] ~ isolates)
-
-
-
-
-table(network::get.vertex.attribute(net_list[[10]],'Core_Order_Prior'))
 
 
 
@@ -309,16 +216,27 @@ table(network::get.vertex.attribute(net_list[[10]],'Core_Order_Prior'))
 form1 = net_list[-1] ~ edges  + mutual + isolates + gwidegree(gwid_decay,fixed=T) +  gwodegree(gwod_decay,fixed=T) + gwesp(gwesp_decay,fixed=T) + 
   timecov(transform = function(t) 1 + t + t^2 + t^3)+
   nodeofactor('Mandatory') + nodeofactor('Utility') + 
-  timecov(x = utility_list_odegree,function(t) t)
+  timecov(transform = function(t) t) +
+  timecov(transform = function(t) t^2) +
+  timecov(transform = function(t) t^3)
 
-form2 = net_list[-1] ~ edges  + mutual + isolates + gwidegree(gwid_decay,fixed=T) +  gwodegree(gwod_decay,fixed=T) + gwesp(gwesp_decay,fixed=T) + timecov(transform = function(t) 1 + t + t^2 + t^3) +
+form2 = net_list[-1] ~ edges  + mutual + isolates + gwidegree(gwid_decay,fixed=T) +  gwodegree(gwod_decay,fixed=T) + gwesp(gwesp_decay,fixed=T) + 
+  timecov(transform = function(t) t) +
+  timecov(transform = function(t) t^2) +
+  timecov(transform = function(t) t^3)+
   nodecov('High_Resource')+nodecov('Core_Order_Prior')+nodecov('High_Resource_x_Core_Order_Prior')
 
-form3 = net_list[-1] ~ edges  + mutual + isolates + gwidegree(gwid_decay,fixed=T) +  gwodegree(gwod_decay,fixed=T) + gwesp(gwesp_decay,fixed=T) + timecov(transform = function(t) 1 + t + t^2 + t^3) +
+form3 = net_list[-1] ~ edges  + mutual + isolates + gwidegree(gwid_decay,fixed=T) +  gwodegree(gwod_decay,fixed=T) + gwesp(gwesp_decay,fixed=T) + 
+  timecov(transform = function(t) t) +
+  timecov(transform = function(t) t^2) +
+  timecov(transform = function(t) t^3)+
   nodeofactor('Mandatory') + nodeofactor('Utility') + edgecov(dynamic_list_prior)+ 
   timecov(x = dynamic_list_prior,  minimum = 8, transform = function(t) 1)
 
-form4 = net_list[-1] ~ edges  + mutual + isolates + gwidegree(gwid_decay,fixed=T) +  gwodegree(gwod_decay,fixed=T) + gwesp(gwesp_decay,fixed=T) + timecov(transform = function(t) 1 + t + t^2 + t^3) +
+form4 = net_list[-1] ~ edges  + mutual + isolates + gwidegree(gwid_decay,fixed=T) +  gwodegree(gwod_decay,fixed=T) + gwesp(gwesp_decay,fixed=T) + 
+  timecov(transform = function(t) t) +
+  timecov(transform = function(t) t^2) +
+  timecov(transform = function(t) t^3)+
   nodeofactor('Mandatory') + nodeofactor('Utility') +
   edgecov(stability_list_prior) + 
   timecov(x = stability_list_prior,  minimum = 18, transform = function(t) 1)
