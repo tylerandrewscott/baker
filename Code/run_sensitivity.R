@@ -1,6 +1,6 @@
 rm(list=ls())
 
-Rnum = 10
+Rnum = 1000
 Rnum_sim = 100
 gwd_sim_reps= 1000
 verb.type = 'all'
@@ -188,117 +188,7 @@ utility_list_idegree = utility_list_idegree[-1]
 
 gwid_decay = gwod_decay = 2
 gwesp_decay = 2
-
-form0A = net_list[-1] ~ edges  + mutual + isolates + gwidegree(gwid_decay,fixed=T) +  
-  gwodegree(gwod_decay,fixed=T) + gwesp(gwesp_decay,fixed=T) + timecov(transform = function(t) t)
-
-test = timecov(net_list[-1], minimum = 1, 
-        transform = function(t) 1 + (1 * t) + (1 * t^2),
-        onlytime = FALSE)
-
-
-
-form0B = net_list[-1] ~ edges  + mutual + isolates + gwidegree(gwid_decay,fixed=T) +  gwodegree(gwod_decay,fixed=T) + 
-  gwesp(gwesp_decay,fixed=T) + 
-  timecov(transform = function(t) 1 + (1 * t) + (1 * t^2))
-
-
-  timecov(transform = function(t) t + t^2)
-
-
-
-iso_mats_dropfirst = iso_list[-1]
-
-
-iso_list = lapply(net_list,function(x) as.sociomatrix(x)*0)
-which_isols = lapply(net_list,isolates)
-iso_list = iso_list[[2]]
-which_isols = which_isols[[2]]
-
-for (i in 1:nrow(iso_list))
-{
-  for (j in 1:ncol(iso_list))
-  {
-   iso_list[i,j] =  ifelse(i %in% which_isols & j %in% which_isols,2,ifelse(i %in% which_isols | j %in% which_isols,1,0))
-  }
-}
-
-test  = ergm(net_list[[2]] ~ edges + isolates)
-
-test2 = ergm(net_list[[2]] ~ edges + edgecov(iso_list))
-
-
-InitErgmTerm.isolates <- function(nw, arglist, ...) {
-  ### Check the network and arguments to make sure they are appropriate.
-  a <- check.ErgmTerm(nw, arglist, directed=NULL, bipartite=NULL,
-                      varnames = NULL,
-                      vartypes = NULL,
-                      defaultvalues = list(),
-                      required = NULL)
-  ### Construct the list to return
-  list(name="isolates",                               #name: required
-       coef.names = "isolates",                       #coef.names: required
-       emptynwstats = network.size(nw), # When nw is empty, isolates=n, not 0,
-       minval = 0,
-       maxval = network.size(nw),
-       conflicts.constraints="degreedist"
-  )                                                               
-}
-
-
-
-
-  
-{iso_list[[i]][c(which_isols[[i]]),] <- 1; iso_list[[i]][,c(which_isols[[i]])] <- 1}
-
-
-
-
-which_isols[[2]]
-rowSums(iso_list[[2]])
-
-summary(test)
-summary(test2)
-
-
-iso_mats = lapply(1:length(iso_list),function(x) {iso_mats[[x]][,c(which_isols[[x]])] <<- 1})
-
-isolates(net_list[[2]])
-summary(test)
-summary(test2)
-  
-iso_list = lapply(net_list,function(x) ifelse(rowSums(as.sociomatrix(x))>0,0,1))
-
-sum(iso_list[[2]])
-
-summary(net_list[[31]] ~ isolates)
-
-
-
-
-table(network::get.vertex.attribute(net_list[[10]],'Core_Order_Prior'))
-
-
-
-
-
-form1 = net_list[-1] ~ edges  + mutual + isolates + gwidegree(gwid_decay,fixed=T) +  gwodegree(gwod_decay,fixed=T) + gwesp(gwesp_decay,fixed=T) + 
-  timecov(transform = function(t) 1 + t + t^2 + t^3)+
-  nodeofactor('Mandatory') + nodeofactor('Utility') + 
-  timecov(x = utility_list_odegree,function(t) t)
-
-form2 = net_list[-1] ~ edges  + mutual + isolates + gwidegree(gwid_decay,fixed=T) +  gwodegree(gwod_decay,fixed=T) + gwesp(gwesp_decay,fixed=T) + timecov(transform = function(t) 1 + t + t^2 + t^3) +
-  nodecov('High_Resource')+nodecov('Core_Order_Prior')+nodecov('High_Resource_x_Core_Order_Prior')
-
-form3 = net_list[-1] ~ edges  + mutual + isolates + gwidegree(gwid_decay,fixed=T) +  gwodegree(gwod_decay,fixed=T) + gwesp(gwesp_decay,fixed=T) + timecov(transform = function(t) 1 + t + t^2 + t^3) +
-  nodeofactor('Mandatory') + nodeofactor('Utility') + edgecov(dynamic_list_prior)+ 
-  timecov(x = dynamic_list_prior,  minimum = 8, transform = function(t) 1)
-
-form4 = net_list[-1] ~ edges  + mutual + isolates + gwidegree(gwid_decay,fixed=T) +  gwodegree(gwod_decay,fixed=T) + gwesp(gwesp_decay,fixed=T) + timecov(transform = function(t) 1 + t + t^2 + t^3) +
-  nodeofactor('Mandatory') + nodeofactor('Utility') +
-  edgecov(stability_list_prior) + 
-  timecov(x = stability_list_prior,  minimum = 18, transform = function(t) 1)
-
+base = "net_list[-1] ~ edges  + mutual + isolates + gwidegree(gwid_decay,fixed=T) +  gwodegree(gwod_decay,fixed=T) + gwesp(gwesp_decay,fixed=T) + timecov(transform = function(t) t)"
 
 h1_block = #H1
   "edgecov(dynamic_list_prior)+ 
@@ -313,22 +203,52 @@ h4_block = #h5
 h5_block =  #H5
   "nodeofactor('Mandatory') + nodeofactor('Utility')" 
 
+gwd_seq = seq(0.25,3,0.25)
+gwd_combos = expand.grid(gwd_seq,gwd_seq,gwd_seq) %>% rename(gwod_shape = Var1,gwid_shape=Var2,gwesp_shape=Var3)
+
 library(parallel)
+#gwd_sim_reps=3
+#gwod_decay_sim <- runif(gwd_sim_reps,0.05,3)
+#gwid_decay_sim <- runif(gwd_sim_reps,0.05,3)
+#gwesp_decay_sim <- runif(gwd_sim_reps,0.05,3)
 
-base_mod_list = lapply(grep('form[0-9]',ls(),value=T),function(x) btergm(get(x),R=Rnum))
+gwid_runif_results = gwod_runif_results = gwesp_runif_results = list()
+gwd_sim_results_1 = lapply(1:gwd_sim_reps,function(x){
+  print(x)
+  gwod_decay_sim <<- runif(1,0.05,3);gwod_runif_results <<- append(gwod_runif_results,gwod_decay_sim)
+  gwid_decay_sim <<- runif(1,0.05,3);gwid_runif_results <<- append(gwid_runif_results,gwid_decay_sim)
+  gwesp_decay_sim <<- runif(1,0.05,3);gwesp_runif_results <<- append(gwesp_runif_results,gwesp_decay_sim)
+try(btergm(net_list[-1] ~ edges + mutual+gwidegree(decay = gwid_decay_sim,
+                                                   fixed=T) +
+             gwodegree(gwod_decay_sim,fixed=T) + gwesp(gwesp_decay_sim,fixed=T)+
+             edgecov(dynamic_list_prior)+ 
+             timecov(x = dynamic_list_prior,  minimum = 8, transform = function(t) 1) +
+             nodecov('High_Resource')+nodecov('Core_Order_Prior')+nodecov('High_Resource_x_Core_Order_Prior')+
+             timecov(x = utility_list_odegree[-1],function(t) t)+
+             nodeofactor('Mandatory_or_Util') + nodeifactor('Mandatory_or_Util'),
+             R=Rnum_sim,verbose=F))})
 
 
-# full_mod_1 = btergm(as.formula(paste(base,h1_block,h2_block,h5_block,sep='+')),R= Rnum)
-# 
-# full_mod_2 = btergm(as.formula(paste(base,h3_block,h2_block,h5_block,sep='+')),R= Rnum)
-# 
-# full_mod_3 = btergm(as.formula(paste(base,h2_block,h4_block,h5_block,sep='+')),R= Rnum)
-# 
+gwd_sim_summary_1 = lapply(gwd_sim_results_1,function(x) try(summary(x)))
+rm(gwd_sim_results_1)
 
-# #btergm(as.formula(paste(base,h2_block,sep='+'),R=100)
-# blocks = c('h1_block','h2_block','h3_block','h4_block','h5_block')
-# block2 = expand.grid(blocks,blocks) %>% filter(Var1!=Var2)
-# restricted_results = lapply(blocks,function(b) try(btergm(as.formula(paste(base,get(as.character(b)),sep='+')),R= Rnum)))#,mc.preschedule = T,mc.cores = length(blocks),mc.set.seed = 24)
+gwd_sim_results_2 = lapply(1:gwd_sim_reps,function(x){
+  print(x)
+  gwod_decay_sim <<- runif(1,0.05,3);gwod_runif_results <<- append(gwod_runif_results,gwod_decay_sim)
+  gwid_decay_sim <<- runif(1,0.05,3);gwid_runif_results <<- append(gwid_runif_results,gwid_decay_sim)
+  gwesp_decay_sim <<- runif(1,0.05,3);gwesp_runif_results <<- append(gwesp_runif_results,gwesp_decay_sim)
+  try(btergm(net_list[-1] ~ edges + mutual+gwidegree(decay = gwid_decay_sim,
+                                                     fixed=T) +
+               gwodegree(gwod_decay_sim,fixed=T) + gwesp(gwesp_decay_sim,fixed=T)+
+               nodecov('High_Resource')+nodecov('Core_Order_Prior')+nodecov('High_Resource_x_Core_Order_Prior')+
+               edgecov(stability_list_prior) + 
+               timecov(x = stability_list_prior,  minimum = 18, transform = function(t) 1)+ 
+               timecov(x = utility_list_odegree[-1],function(t) t)+
+               nodeofactor('Mandatory_or_Util') + nodeifactor('Mandatory_or_Util'),
+             R=Rnum_sim,verbose=F))})
+
+gwd_sim_summary_2 = lapply(gwd_sim_results_2,function(x) try(summary(x)))
+rm(gwd_sim_results_2)
 
 #gwodegree(gwod_decay_sim[x],fixed=T) + gwesp(gwesp_decay_sim[x],fixed=T) +
 #edgecov(dynamic_list_prior)+ 
@@ -339,7 +259,7 @@ base_mod_list = lapply(grep('form[0-9]',ls(),value=T),function(x) btergm(get(x),
 #timecov(x = utility_list_odegree[-1],function(t) t)+
 #nodeofactor('Mandatory_or_Util') + nodeifactor('Mandatory_or_Util')
 #, mc.preschedule = TRUE,mc.set.seed = 24,mc.cores = 10)
-save.image('Scratch/temp_btergm_results.RData')
+save.image('Scratch/temp_btergm_gw_results.RData')
 #lapply(1:nrow(block2),function(b) try(btergm(as.formula(paste(base,get(as.character(block2$Var1[b])),get(as.character(block2$Var2[b])),sep='+')),R= 10)))
 
 
