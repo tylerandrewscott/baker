@@ -189,6 +189,30 @@ utility_list_idegree = utility_list_idegree[-1]
 gwid_decay = gwod_decay = 2
 gwesp_decay = 2
 
+test = btergm(net_list[-1] ~ edges  + mutual + isolates +
+  timecov(transform = function(t) t) +
+    timecov(transform = function(t) t^2) + 
+    timecov(transform = function(t) t^3),R=100)
+
+summary(test)
+
+networks <- list()
+for(i in 1:10){            # create 10 random networks with 10 actors
+  mat <- matrix(rbinom(100, 1, .25), nrow = 10, ncol = 10)
+  diag(mat) <- 0           # loops are excluded
+  nw <- network(mat)       # create network object
+  networks[[i]] <- nw      # add network to the list
+}
+
+btergm(networks ~ edges + edgecov(covariates),R =100)
+covariates <- list()
+for (i in 1:10) {          # create 10 matrices as covariate
+  mat <- matrix(rnorm(100), nrow = 10, ncol = 10)
+  covariates[[i]] <- mat   # add matrix to the list
+}
+
+
+
 form0A = net_list[-1] ~ edges  + mutual + isolates + gwidegree(gwid_decay,fixed=T) +  
   gwodegree(gwod_decay,fixed=T) + gwesp(gwesp_decay,fixed=T) + timecov(transform = function(t) t)
 
