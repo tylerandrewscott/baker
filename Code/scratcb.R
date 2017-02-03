@@ -1,4 +1,21 @@
+library(btergm)
+library(statnet)
 rm(list=ls())
+load('Scratch/temp_btergm_null_results.RData')
+plot.network(net_list[[2]],displayisolates = FALSE)
+?plot.network
+net_list[[1]]
+test = btergm(net_list[2:10]~edges+isolates+mutual,R=100)
+tgof = gof(test,statistic=c(rocpr))
+par(mfrow=c(1,1))
+?plot
+plot(tgof$`Tie prediction`)
+
+plot(net_list[[2]],isolates=FALSE)
+lapply(net_list,degreedist)
+
+
+
 set.seed(24)
 library(lubridate)
 library(statnet)
@@ -125,15 +142,13 @@ stability_list_prior = stability_list[-dim(net_array)[3]]
 for (x in 1:length(net_list))
 {
   network::set.vertex.attribute(net_list[[x]],attrname = 'High_Resource',
-           value = rowSums(node_base[match(network.vertex.names(net_list[[x]]),node_base$Name),
-              c('Agency','Utility','Consultant')]))
+                                value = rowSums(node_base[match(network.vertex.names(net_list[[x]]),node_base$Name),
+                                                          c('Agency','Utility','Consultant')]))
 }
 
 require(igraph)
 coreness_metric_list = lapply(1:length(net_list),function(x)
   graph.coreness(graph_from_adjacency_matrix(as.sociomatrix(net_list[[x]]))))
-
-
 
 for (x in 2:length(net_list))
 {
@@ -148,15 +163,6 @@ for (x in 2:length(net_list))
                                 value = network::get.vertex.attribute(net_list[[x]],'High_Resource') *
                                   network::get.vertex.attribute(net_list[[x]],'Core_Order_Prior'),
                                 attrname = 'High_Resource_x_Core_Order_Prior')}
-
-
-for (x in 2:length(net_list))
-{
-  network::set.vertex.attribute(net_list[[x]],
-                                value = sna::degree(net_list[[x-1]],cmode = 'indegree') - sna::degree(net_list[[x-1]],cmode = 'outdegree'),
-                                attrname = 'Prior_In-Out')}
-
-
 
 for (x in 2:length(net_list))
 {
@@ -184,20 +190,15 @@ for (x in 2:length(net_list))
 
 for (x in 2:length(net_list))
 {
-  network::set.vertex.attribute(net_list[[x]],attrname = 'Peripheral',
-  value = -network::get.vertex.attribute(net_list[[x]],'Core_Order_Prior'))}
+  network::set.vertex.attribute(net_list[[x]],attrname = 'High_Core',
+                                value = ifelse(network::get.vertex.attribute(net_list[[x]],'Core_Order_Prior')>=10,1,0))}
 
 for (x in 2:length(net_list))
 {
   network::set.vertex.attribute(net_list[[x]],value = network::get.vertex.attribute(net_list[[x]],'High_Resource') *
-                                  network::get.vertex.attribute(net_list[[x]],'Peripheral'),
-                                attrname = 'High_Resource_x_Peripheral')}
+                                  network::get.vertex.attribute(net_list[[x]],'High_Core'),
+                                attrname = 'High_Resource_x_High_Core')}
 
-for (x in 2:length(net_list))
-{
-  network::set.vertex.attribute(net_list[[x]],value = network::get.vertex.attribute(net_list[[x]],'High_Resource') *
-                                  network::get.vertex.attribute(net_list[[x]],'Prior_In-Out'),
-                                attrname = 'High_Resource_x_Prior_In-Out')}
 
 utility_matrix_odegree = do.call(cbind,lapply(1:network::network.size(net_list[[2]]),function(x) network::get.vertex.attribute(net_list[[2]],'Utility')))
 utility_list_odegree  = lapply(1:length(net_list),function(x) utility_matrix_odegree)
@@ -219,127 +220,47 @@ utility_list_idegree = utility_list_idegree[-1]
 gwid_decay = gwod_decay = 2
 gwesp_decay = 2
 
-# form0A = net_list[-1] ~ edges  + mutual + isolates + gwidegree(gwid_decay,fixed=T) +  
-#   #gwodegree(gwod_decay,fixed=T) +
-#   gwesp(gwesp_decay,fixed=T) + timecov(transform = function(t) t)
-# form0B = net_list[-1] ~ edges  + mutual + isolates + gwidegree(gwid_decay,fixed=T) +  
-#   #gwodegree(gwod_decay,fixed=T) + 
-#   gwesp(gwesp_decay,fixed=T) + timecov(transform = function(t) t) + timecov(transform = function(t) t^2)
-# form0C = net_list[-1] ~ edges  + mutual + isolates + gwidegree(gwid_decay,fixed=T) +  
-#   #gwodegree(gwod_decay,fixed=T) + 
-#   gwesp(gwesp_decay,fixed=T) + 
-#   timecov(transform = function(t) t)+ timecov(transform = function(t) t^2)+ timecov(transform = function(t) t^3)
-
-#null_mod_list = lapply(grep('form0',ls(),value=T),function(x) btergm(get(x),R=Rnum,parallel = 'multicore',ncpus = 4))
-#null_mod_list2 = lapply(grep('form0',ls(),value=T),function(x) btergm(get(x),R=100,parallel = 'multicore',ncpus = 4))
-
-
-# form0B = net_list[-1] ~ edges  + mutual + isolates + 
-#   gwidegree(gwid_decay,fixed=T) +  #gwodegree(gwod_decay,fixed=T) + 
-#   gwesp(gwesp_decay,fixed=T) + 
-#   timecov(transform = function(t) t) +
-#   timecov(transform = function(t) t^2)
-# 
-# form0C = net_list[-1] ~ edges  + mutual + isolates + gwidegree(gwid_decay,fixed=T) +  gwodegree(gwod_decay,fixed=T) + 
-#   gwesp(gwesp_decay,fixed=T) + 
-#   timecov(transform = function(t) t) +
-#   timecov(transform = function(t) t^2) +
-#   timecov(transform = function(t) t^3)
-
-form1 = net_list[-1] ~ edges  + mutual + isolates + gwidegree(gwid_decay,fixed=T) +  
-  gwesp(gwesp_decay,fixed=T) + 
-  nodeofactor('Mandatory') + nodeofactor('Utility') + 
-  timecov(transform = function(t) t)+ timecov(transform = function(t) t^2)+ 
-  timecov(transform = function(t) t^3)
-
-form2 = net_list[-1] ~ edges  + mutual + isolates + 
-  gwidegree(gwid_decay,fixed=T) + 
-  gwesp(gwesp_decay,fixed=T) + 
-  timecov(transform = function(t) t)+ timecov(transform = function(t) t^2)+ 
-  timecov(transform = function(t) t^3)+
-  nodefactor('High_Resource')+nodecov('Prior_In-Out')+nodecov('High_Resource_x_Prior_In-Out')
-
-form3 = net_list[-1] ~ edges  + mutual + isolates + gwidegree(gwid_decay,fixed=T) +  
-  gwesp(gwesp_decay,fixed=T) + 
-  timecov(transform = function(t) t)+ timecov(transform = function(t) t^2)+ timecov(transform = function(t) t^3)+
-  #timecov(transform = function(t) t^2) +
-  nodeofactor('Mandatory') + nodeofactor('Utility') + 
-  edgecov(dynamic_list_prior)+ 
-  timecov(x = dynamic_list_prior,  minimum = 8, transform = function(t) 1)
-
-form4 = net_list[-1] ~ edges  + mutual + isolates + 
-  gwidegree(gwid_decay,fixed=T) +  
-  gwesp(gwesp_decay,fixed=T) + 
-  timecov(transform = function(t) t)+ timecov(transform = function(t) t^2)+ timecov(transform = function(t) t^3)+
-  nodeofactor('Mandatory') + nodeofactor('Utility') +
-  edgecov(stability_list_prior) + 
-  timecov(x = stability_list_prior,  minimum = 18, transform = function(t) 1)
-
-form5 = net_list[-1] ~ edges  + mutual + isolates + 
-  gwidegree(gwid_decay,fixed=T) +  
-  gwesp(gwesp_decay,fixed=T) + 
-  timecov(transform = function(t) t)+ timecov(transform = function(t) t^2)+ timecov(transform = function(t) t^3)+
-  nodeofactor('Mandatory') + #nodeofactor('Utility') + 
-  timecov(x = utility_list_odegree,function(t) t)
-
-
-h1_block = #H1
-  "edgecov(dynamic_list_prior)+ 
-timecov(x = dynamic_list_prior,  minimum = 8, transform = function(t) 1)"
-h2_block =  #H2
-  "nodecov('High_Resource')+nodecov('Core_Order_Prior')+nodecov('High_Resource_x_Core_Order_Prior')"
-h3_block =   #H3
-  "edgecov(stability_list_prior) + 
-timecov(x = stability_list_prior,  minimum = 18, transform = function(t) 1)"
-h4_block = #h5
-  "timecov(x = utility_list_odegree,function(t) t)"
-h5_block =  #H5
-  "nodeofactor('Mandatory') + nodeofactor('Utility')" 
-
-library(parallel)
-
-#base_mod_list = lapply(grep('form[0-9][A-Z]',ls(),value=T),function(x) btergm(get(x),R=Rnum,parallel = 'multicore',ncpus = 4))
-library(texreg)
-
-
-#h_mod_list = lapply(grep('form[0-9]',ls(),value=T),function(x) btergm(get(x),R=Rnum,parallel = 'multicore',ncpus = 4))
-
-m1 = btergm(form1,R=Rnum,parallel='multicore',ncpus=4)
-save.image('Scratch/temp_btergm_results.RData',compress = TRUE,safe=TRUE)
-m2 = btergm(form2,R=Rnum,parallel='multicore',ncpus=4)
-save.image('Scratch/temp_btergm_results.RData',compress = TRUE,safe=TRUE)
-m3 = btergm(form3,R=Rnum,parallel='multicore',ncpus=4)
-save.image('Scratch/temp_btergm_results.RData',compress = TRUE,safe=TRUE)
-m4 = btergm(form4,R=Rnum,parallel='multicore',ncpus=4)
-save.image('Scratch/temp_btergm_results.RData',compress = TRUE,safe=TRUE)
-m5 = btergm(form5,R=Rnum,parallel='multicore',ncpus=4)
-save.image('Scratch/temp_btergm_results.RData',compress = TRUE,safe=TRUE)
-
-
-#h_gof_list = lapply(h_mod_list,function(x) gof(x,statistic=c(rocpr)))
+form0A = net_list[-1] ~ edges  + mutual + isolates + gwidegree(gwid_decay,fixed=T) +  
+  #gwodegree(gwod_decay,fixed=T) +
+  gwesp(gwesp_decay,fixed=T) + timecov(transform = function(t) t)
+form0B = net_list[-1] ~ edges  + mutual + isolates + gwidegree(gwid_decay,fixed=T) +  
+  #gwodegree(gwod_decay,fixed=T) + 
+  gwesp(gwesp_decay,fixed=T) + timecov(transform = function(t) t) + timecov(transform = function(t) t^2)
+form0C = net_list[-1] ~ edges  + mutual + isolates + gwidegree(gwid_decay,fixed=T) +  
+  #gwodegree(gwod_decay,fixed=T) + 
+  gwesp(gwesp_decay,fixed=T) + timecov(transform = function(t) t)+ timecov(transform = function(t) t^2)+ timecov(transform = function(t) t^3)
 
 
 
-# full_mod_1 = btergm(as.formula(paste(base,h1_block,h2_block,h5_block,sep='+')),R= Rnum)
-# 
-# full_mod_2 = btergm(as.formula(paste(base,h3_block,h2_block,h5_block,sep='+')),R= Rnum)
-# 
-# full_mod_3 = btergm(as.formula(paste(base,h2_block,h4_block,h5_block,sep='+')),R= Rnum)
-# 
+networks <- list()
+for(i in 1:10){
+  mat <- matrix(rbinom(100, 1, .25), nrow = 10, ncol = 10)
+  diag(mat) <- 0
+  nw <- network(mat)
+  networks[[i]] <- nw
+}
 
-# #btergm(as.formula(paste(base,h2_block,sep='+'),R=100)
-# blocks = c('h1_block','h2_block','h3_block','h4_block','h5_block')
-# block2 = expand.grid(blocks,blocks) %>% filter(Var1!=Var2)
-# restricted_results = lapply(blocks,function(b) try(btergm(as.formula(paste(base,get(as.character(b)),sep='+')),R= Rnum)))#,mc.preschedule = T,mc.cores = length(blocks),mc.set.seed = 24)
+covariates <- list()
+for (i in 1:10) {
+  mat <- matrix(rnorm(100), nrow = 10, ncol = 10)
+  covariates[[i]] <- mat
+}
 
-#gwodegree(gwod_decay_sim[x],fixed=T) + gwesp(gwesp_decay_sim[x],fixed=T) +
-#edgecov(dynamic_list_prior)+ 
-#timecov(x = dynamic_list_prior,  minimum = 8, transform = function(t) 1) +
-#nodecov('High_Resource')+nodecov('Core_Order_Prior')+nodecov('High_Resource_x_Core_Order_Prior')+
-#edgecov(stability_list_prior) + 
-#timecov(x = stability_list_prior,  minimum = 18, transform = function(t) 1)+ 
-#timecov(x = utility_list_odegree[-1],function(t) t)+
-#nodeofactor('Mandatory_or_Util') + nodeifactor('Mandatory_or_Util')
-#, mc.preschedule = TRUE,mc.set.seed = 24,mc.cores = 10)
-#lapply(1:nrow(block2),function(b) try(btergm(as.formula(paste(base,get(as.character(block2$Var1[b])),get(as.character(block2$Var2[b])),sep='+')),R= 10)))
+fit <- btergm(networks ~ edges + istar(2) + edgecov(covariates) 
+              + timecov(transform = function(t) t) 
+              + timecov(transform = function(t) t^2)
+              + timecov(covariates, transform = function(t) t)
+              + timecov(covariates, transform = function(t) t^2), R = 100)
+
+fit2 = btergm(net_list[-1] ~ edges + isolates,R = 100)
+test2 = gof(fit2,statistic=c(rocpr))
+net_list[[10]]
+tt = ergm(net_list[[10]] ~ edges + isolates + gwesp(0.25,fixed=T))
+ff = gof(tt,statistic=c(rocpr))
+plot(test2)
+
+par(mfrow=c(1,1))
+plot(test$`Tie prediction`)
+
+
 
