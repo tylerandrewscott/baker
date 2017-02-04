@@ -5,7 +5,7 @@ library(statnet)
 library(btergm)
 library(tidyverse)
 library(stringr)
-Rnum = 1000
+Rnum = 100
 Rnum_sim = 100
 gwd_sim_reps= 1000
 verb.type = 'all'
@@ -132,13 +132,22 @@ for (x in 1:length(net_list))
 require(igraph)
 coreness_metric_list = lapply(1:length(net_list),function(x)
   graph.coreness(graph_from_adjacency_matrix(as.sociomatrix(net_list[[x]]))))
-
+coreness_rank_list = lapply(coreness_metric_list,function(x) as.numeric(as.factor(x)))
 
 
 for (x in 2:length(net_list))
 {
   network::set.vertex.attribute(net_list[[x]],attrname = 'Core_Order_Prior',
                                 value = coreness_metric_list[[x-1]][
+                                  match(network.vertex.names(net_list[[x]]),names(coreness_metric_list[[x-1]]))])
+}
+                                              
+
+
+for (x in 2:length(net_list))
+{
+  network::set.vertex.attribute(net_list[[x]],attrname = 'Core_Rank_Prior',
+                                value = coreness_rank_list[[x-1]][
                                   match(network.vertex.names(net_list[[x]]),names(coreness_metric_list[[x-1]]))])
 }
 
@@ -156,7 +165,17 @@ for (x in 2:length(net_list))
                                 value = sna::degree(net_list[[x-1]],cmode = 'indegree') - sna::degree(net_list[[x-1]],cmode = 'outdegree'),
                                 attrname = 'Prior_In-Out')}
 
+for (x in 2:length(net_list))
+{
+  network::set.vertex.attribute(net_list[[x]],
+                                value = sna::degree(net_list[[x-1]],cmode = 'indegree') - sna::degree(net_list[[x-1]],cmode = 'outdegree'),
+                                attrname = 'Prior_Outdegree')}
 
+for (x in 2:length(net_list))
+{
+  network::set.vertex.attribute(net_list[[x]],
+                                value = sna::degree(net_list[[x-1]],cmode = 'indegree') - sna::degree(net_list[[x-1]],cmode = 'outdegree'),
+                                attrname = 'Prior_Indegree')}
 
 for (x in 2:length(net_list))
 {
@@ -206,6 +225,37 @@ utility_list_idegree  = lapply(1:length(net_list),function(x) utility_matrix_ide
 utility_list_odegree = utility_list_odegree[-1] 
 utility_list_idegree = utility_list_idegree[-1]
 
+num_meetings_attended = tidyr::expand(attendance,nesting(Name,Org),nesting(Interval,Phase)) %>%
+  left_join(.,attendance %>% group_by(Name,Org,Interval,Phase) %>% summarise(Meetings_Attended = n())) %>%
+  mutate(Meetings_Attended = ifelse(is.na(Meetings_Attended),0,Meetings_Attended))
+
+
+#Note: Interval - 1 because intervals are 0 rated
+meet_num_list = lapply(1:length(net_list),function(x)
+(num_meetings_attended %>% filter(Interval == x-1))$Meetings_Attended[match(network.vertex.names(net_list[[x]]),
+                                                                                            (num_meetings_attended %>% filter(Interval == x-1))$Name)])
+for (x in 1:length(net_list))
+{network::set.vertex.attribute(net_list[[x]],attrname = 'Meetings_Attended',
+                                value = meet_num_list[[x]])}
+
+for (x in 2:length(net_list))
+{network::set.vertex.attribute(net_list[[x]],attrname = 'Prior_Meetings_Attended',
+                               value = meet_num_list[[x-1]])}
+
+for (x in 2:length(net_list))
+{network::set.vertex.attribute(net_list[[x]],attrname = 'Attended_Any_Prior',
+                               value = ifelse(meet_num_list[[x-1]]==0,0,1))}
+
+
+for (x in 2:length(net_list))
+{network::set.vertex.attribute(net_list[[x]],attrname = 'Attended_Any_Prior_x_Core_Rank_Prior',
+                               value = network::get.vertex.attribute(net_list[[x]],'Attended_Any_Prior') * 
+                                 network::get.vertex.attribute(net_list[[x]],'Core_Rank_Prior'))}
+
+for (x in 2:length(net_list))
+{network::set.vertex.attribute(net_list[[x]],attrname = 'Attended_Any_Prior_x_Core_Rank_Prior_x_High_Resource',
+                               value = network::get.vertex.attribute(net_list[[x]],'Attended_Any_Prior_x_Core_Rank_Prior') * 
+                                 network::get.vertex.attribute(net_list[[x]],'High_Resource'))}
 
 # signatory_matrix_odegree = do.call(cbind,lapply(1:network.size(net_list[[2]]),function(x) get.vertex.attribute(net_list[[2]],'Signatory')))
 # signatory_list_odegree  = lapply(1:length(net_list),function(x) signatory_matrix_odegree)
@@ -246,20 +296,27 @@ gwesp_decay = 2
 #   timecov(transform = function(t) t^2) +
 #   timecov(transform = function(t) t^3)
 
-form1 = net_list[-1] ~ edges  + mutual + isolates + gwidegree(gwid_decay,fixed=T) +  
+form1 = net_list[-1] ~ edges  + mutual + isolates + nodecov('Meetings_Attended') +gwidegree(gwid_decay,fixed=T) +  
   gwesp(gwesp_decay,fixed=T) + 
   nodeofactor('Mandatory') + nodeofactor('Utility') + 
   timecov(transform = function(t) t)+ timecov(transform = function(t) t^2)+ 
   timecov(transform = function(t) t^3)
 
-form2 = net_list[-1] ~ edges  + mutual + isolates + 
+form2 = net_list[-1] ~ edges  + mutual + isolates + nodecov('Meetings_Attended') +
   gwidegree(gwid_decay,fixed=T) + 
   gwesp(gwesp_decay,fixed=T) + 
   timecov(transform = function(t) t)+ timecov(transform = function(t) t^2)+ 
   timecov(transform = function(t) t^3)+
-  nodefactor('High_Resource')+nodecov('Prior_In-Out')+nodecov('High_Resource_x_Prior_In-Out')
+  nodefactor('Attended_Any_Prior') + nodecov('Core_Rank_Prior') + nodecov('Attended_Any_Prior_x_Core_Rank_Prior')
 
-form3 = net_list[-1] ~ edges  + mutual + isolates + gwidegree(gwid_decay,fixed=T) +  
+form2A = net_list[-1] ~ edges  + mutual + isolates + nodecov('Meetings_Attended') +
+  gwidegree(gwid_decay,fixed=T) + 
+  gwesp(gwesp_decay,fixed=T) + 
+  timecov(transform = function(t) t)+ timecov(transform = function(t) t^2)+ 
+  timecov(transform = function(t) t^3)+
+  nodefactor('Attended_Any_Prior') + nodecov('Core_Rank_Prior') + nodecov('Attended_Any_Prior_x_Core_Rank_Prior')
+
+form3 = net_list[-1] ~ edges  + mutual + isolates + nodecov('Meetings_Attended') +gwidegree(gwid_decay,fixed=T) +  
   gwesp(gwesp_decay,fixed=T) + 
   timecov(transform = function(t) t)+ timecov(transform = function(t) t^2)+ timecov(transform = function(t) t^3)+
   #timecov(transform = function(t) t^2) +
@@ -267,7 +324,7 @@ form3 = net_list[-1] ~ edges  + mutual + isolates + gwidegree(gwid_decay,fixed=T
   edgecov(dynamic_list_prior)+ 
   timecov(x = dynamic_list_prior,  minimum = 8, transform = function(t) 1)
 
-form4 = net_list[-1] ~ edges  + mutual + isolates + 
+form4 = net_list[-1] ~ edges  + mutual + isolates + nodecov('Meetings_Attended') +
   gwidegree(gwid_decay,fixed=T) +  
   gwesp(gwesp_decay,fixed=T) + 
   timecov(transform = function(t) t)+ timecov(transform = function(t) t^2)+ timecov(transform = function(t) t^3)+
@@ -275,7 +332,7 @@ form4 = net_list[-1] ~ edges  + mutual + isolates +
   edgecov(stability_list_prior) + 
   timecov(x = stability_list_prior,  minimum = 18, transform = function(t) 1)
 
-form5 = net_list[-1] ~ edges  + mutual + isolates + 
+form5 = net_list[-1] ~ edges  + mutual + isolates +  nodecov('Meetings_Attended') +
   gwidegree(gwid_decay,fixed=T) +  
   gwesp(gwesp_decay,fixed=T) + 
   timecov(transform = function(t) t)+ timecov(transform = function(t) t^2)+ timecov(transform = function(t) t^3)+
@@ -305,15 +362,16 @@ library(texreg)
 #h_mod_list = lapply(grep('form[0-9]',ls(),value=T),function(x) btergm(get(x),R=Rnum,parallel = 'multicore',ncpus = 4))
 
 m1 = btergm(form1,R=Rnum,parallel='multicore',ncpus=4)
-save.image('Scratch/temp_btergm_results.RData',compress = TRUE,safe=TRUE)
+#save.image('Scratch/temp_btergm_results.RData',compress = TRUE,safe=TRUE)
 m2 = btergm(form2,R=Rnum,parallel='multicore',ncpus=4)
-save.image('Scratch/temp_btergm_results.RData',compress = TRUE,safe=TRUE)
+m2a = btergm(form2A,R=Rnum,parallel='multicore',ncpus=4)
+#save.image('Scratch/temp_btergm_results.RData',compress = TRUE,safe=TRUE)
 m3 = btergm(form3,R=Rnum,parallel='multicore',ncpus=4)
-save.image('Scratch/temp_btergm_results.RData',compress = TRUE,safe=TRUE)
+#save.image('Scratch/temp_btergm_results.RData',compress = TRUE,safe=TRUE)
 m4 = btergm(form4,R=Rnum,parallel='multicore',ncpus=4)
-save.image('Scratch/temp_btergm_results.RData',compress = TRUE,safe=TRUE)
+#save.image('Scratch/temp_btergm_results.RData',compress = TRUE,safe=TRUE)
 m5 = btergm(form5,R=Rnum,parallel='multicore',ncpus=4)
-save.image('Scratch/temp_btergm_results.RData',compress = TRUE,safe=TRUE)
+#save.image('Scratch/temp_btergm_results.RData',compress = TRUE,safe=TRUE)
 
 
 #h_gof_list = lapply(h_mod_list,function(x) gof(x,statistic=c(rocpr)))
