@@ -254,40 +254,51 @@ gwesp_decay = 2
 
 
 
-form1 = net_list[-1] ~ edges  + mutual + 
-  #isolates + 
-  nodecov('Meetings_Attended') +gwidegree(gwid_decay,fixed=T) +  
-  gwesp(gwesp_decay,fixed=T) + 
+form1 = net_list[-1] ~ edges  + 
+  #mutual + isolates + 
+  nodecov('Meetings_Attended') + 
+  gwidegree(gwid_decay,fixed=T) + 
+  gwodegree(gwod_decay,fixed=T) + 
+  #gwesp(gwesp_decay,fixed=T) + 
   nodeofactor('Mandatory') +  edgecov(utility_list_odegree) + 
   timecov(transform = function(t) t)
+
 # timecov(minimum = 8,maximum = 10, transform = function(t) t) +
 #  timecov(minimum = 11,maximum = 18, transform = function(t) t) +
 # timecov(minimum = 19, transform = function(t) t)
 #timecov(transform = function(t) t^2)+ 
 #timecov(transform = function(t) t^3)
 
-form2 = net_list[-1] ~ edges  + mutual + isolates + 
-  nodecov('Meetings_Attended') + gwidegree(gwid_decay,fixed=T) + 
-  gwesp(gwesp_decay,fixed=T) + 
+form2 = net_list[-1] ~ edges  + 
+  #mutual + isolates + 
+  nodecov('Meetings_Attended') + 
+  gwidegree(gwid_decay,fixed=T) + 
+  gwodegree(gwod_decay,fixed=T) + 
+  #gwesp(gwesp_decay,fixed=T) + 
   timecov(transform = function(t) t)+
   #timecov(transform = function(t) t^2)+ 
   #timecov(transform = function(t) t^3)+
   nodeofactor('High_Resource') + 
   nodeocov('Page_Rank_Prior')
 
-form2A = net_list[-1] ~ edges  + mutual + isolates + 
-  nodecov('Meetings_Attended') +
+form2A = net_list[-1] ~ edges  + 
+  #mutual + isolates + 
+  nodecov('Meetings_Attended') + 
   gwidegree(gwid_decay,fixed=T) + 
-  gwesp(gwesp_decay,fixed=T) + 
+  gwodegree(gwod_decay,fixed=T) + 
+  #gwesp(gwesp_decay,fixed=T) + 
   timecov(transform = function(t) t)+
   nodeofactor('High_Resource') + 
   nodeocov('Page_Rank_Prior') + 
   nodeocov('High_Resource_x_Page_Rank_Prior')
 
 
-form3 = net_list[-1] ~ edges  + mutual + isolates + 
-  nodecov('Meetings_Attended') +gwidegree(gwid_decay,fixed=T) +  
-  gwesp(gwesp_decay,fixed=T) +
+form3 = net_list[-1] ~ edges  + 
+  #mutual + isolates + 
+  nodecov('Meetings_Attended') + 
+  gwidegree(gwid_decay,fixed=T) + 
+  gwodegree(gwod_decay,fixed=T) + 
+  #gwesp(gwesp_decay,fixed=T) + 
   #timecov(transform = function(t) t^2)+ timecov(transform = function(t) t^3)+
   #timecov(transform = function(t) t^2) +
   nodeofactor('Mandatory') +  edgecov(utility_list_odegree) + 
@@ -297,29 +308,24 @@ form3 = net_list[-1] ~ edges  + mutual + isolates +
   timecov(x = stability_list_prior, minimum = 8, transform = function(t) 1)
 
 
-test = btergm(net_list[-1]~ edges  + mutual + isolates + 
-                nodecov('Meetings_Attended') +
-                gwidegree(gwid_decay,fixed=T) +  
-                gwesp(gwesp_decay,fixed=T) + 
-                nodeofactor('Mandatory') +  edgecov(utility_list_odegree) + 
-                timecov(transform = function(t) t) + edgecov(autoreg_list_prior),R=100)
-summary(m3)
-exp(0.87-0.197)
-exp(0.46-0.09)
-
-form4 = net_list[-1] ~ edges + mutual + isolates + 
-  nodecov('Meetings_Attended') +
-  gwidegree(gwid_decay,fixed=T) +  
-  gwesp(gwesp_decay,fixed=T) + 
+form4 = net_list[-1] ~ edges + 
+  #mutual + isolates + 
+  nodecov('Meetings_Attended') + 
+  gwidegree(gwid_decay,fixed=T) + 
+  gwodegree(gwod_decay,fixed=T) + 
+  #gwesp(gwesp_decay,fixed=T) + 
   nodeofactor('Mandatory') +  edgecov(utility_list_odegree) + 
   timecov(transform = function(t) t)+
   timecov(minimum = 19, transform = function(t) 1) +
   edgecov(autoreg_list_prior) + 
   timecov(x = autoreg_list_prior, minimum = 19, transform = function(t) 1) 
 
-form5 = net_list[-1] ~ edges  + mutual +  isolates + nodecov('Meetings_Attended') +
-  gwidegree(gwid_decay,fixed=T) +  
-  gwesp(gwesp_decay,fixed=T) + 
+form5 = net_list[-1] ~ edges  + 
+  #mutual + isolates + 
+  nodecov('Meetings_Attended') + 
+  gwidegree(gwid_decay,fixed=T) + 
+  gwodegree(gwod_decay,fixed=T) + 
+  #gwesp(gwesp_decay,fixed=T) + 
   timecov(transform = function(t) t)+ #timecov(transform = function(t) t^2)+ timecov(transform = function(t) t^3)+
   nodeofactor('Mandatory') + #nodeofactor('Utility') + 
   edgecov(utility_list_odegree) + 
@@ -357,10 +363,11 @@ m4 = btergm(form4,R=Rnum,parallel='multicore',ncpus=8)
 #save.image('Scratch/temp_btergm_results.RData',compress = TRUE,safe=TRUE)
 m5 = btergm(form5,R=Rnum,parallel='multicore',ncpus=8)
 
-save.image('Scratch/temp_btergm_results.RData',compress = TRUE,safe=TRUE)
+save.image('Scratch/temp_btergm_results2.RData',compress = TRUE,safe=TRUE)
 
-h_gof_list = lapply(list(m1,m2,m2a,m3,m4,m5),function(x) gof(x,statistic=c(rocpr,dsp,esp,ideg,odeg),parallel='multicore',ncpus=4))
-save.image('Scratch/temp_btergm_results.RData',compress = TRUE,safe=TRUE)
+h_gof_list = lapply(list(m1,m2,m2a,m3,m4,m5),function(x) 
+  gof(x,statistic=c(rocpr,dsp,esp,ideg,odeg),parallel='multicore',ncpus=8,MCMC.interval=10000))
+save.image('Scratch/temp_btergm_results2.RData',compress = TRUE,safe=TRUE)
 
 
 

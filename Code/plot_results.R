@@ -2,13 +2,16 @@ rm(list=ls())
 library(statnet)
 library(btergm)
 library(tidyverse)
-library(knitr)
+
 library(texreg)
 library(forcats)
 load('Scratch/temp_btergm_results.RData')
+#load('Scratch/temp_btergm_results2.RData')
 
 #rm(list=ls()[!grepl('h_[a-z]{3}_list',ls())])
 gc(reset = TRUE)
+
+length(unique(talkers$Meeting))
 library(texreg)
 library(broom)
 
@@ -114,7 +117,10 @@ names(m5@coef) = fct_recode(names(m5@coef),`Isolates` = 'isolates',
 
 
 screenreg(list(m1,m2,m2a,m3,m4,m5),level=0.95,digits=3)
-htmlreg(list(m1,m2,m2a,m3,m4,m5),level=0.95,file='Scratch/mod_table.html',digits=3)
+htmlreg(list(m1,m2,m2a),level=0.95,file='Scratch/mod_table_122a.html',digits=3)
+htmlreg(list(m3,m4,m5),level=0.95,file='Scratch/mod_table_345.html',digits=3)
+
+
 library(broom)
 mod_results = do.call(rbind,lapply(grep('^m[0-9]',ls(),value=T), function(x) tidy(get(x)) %>% mutate(model = x)))
 mod_results$term = as.factor(mod_results$term)
@@ -168,63 +174,31 @@ gg1 = ggplot(full_results%>% filter(grepl('m1',model),!grepl('Edges',term)),
         legend.title = element_text(size=18),  axis.title.y = element_blank(),
         axis.title.x = element_text(size=18),axis.ticks=element_blank(),
         axis.text=element_text(size=18)) + guides(fill=FALSE)
-gg1
+
 ###Note: takes a long time to run; generates giant 19M row dataframe
-eprobs_m2a = edgeprob(m2a,ncpus = 8, parallel = "multicore")
+eprobs_m2a = edgeprob(m2a)
 eprobs_m2a$phase = ifelse(eprobs_m2a$t %in% 1:7,'Planning/scoping',ifelse(eprobs_m2a$t %in% 8:10,'Application/development',
                                                                           ifelse(eprobs_m2a$t %in% 11:18,'Review','Implementation')))
-eprobs_m2a = eprobs_m2a %>% filter(probability!=1)
+library(parallel)
+cl = makeCluster(getOption("cl.cores", 8))
+clusterExport(cl,c('eprobs_m2a','any_meeting_mat'))
+attend_prior_meeting = parLapply(1:nrow(eprobs_m2a),function(x) any_meeting_mat[[eprobs_m2a$t[x]]][eprobs_m2a$i[x],eprobs_m2a$j[x]]==1,cl = cl)
 
-test = eprobs_m2a[seq(0,19000000,10000),]
-
-
-facets(edgeprobs = test,mem=mem,number=3,var1 =
-         "nodeocov.Page_Rank_Prior", var2 =
-         "nodeofactor.High_Resource.1", varname1 = "Page rank",
-       varname2 = "High resource")
-facets(edgeprobs = edgeprob.3, mem = mem, number = 3, var1 =
-         "nodeocov.Page_Rank_Prior", var2 =
-         "nodeofactor.High_Resource.1", varname1 = "Page rank",
-       varname2 = "High resource") 
+eprobs_m2a_priormeeting = eprobs_m2a %>% filter(unlist(attend_prior_meeting),probability!=1)
 
 
+gp <- ggplot(data = eprobs_m2a_priormeeting, aes(x = `nodeocov.Page_Rank_Prior`, y = probability, colour = factor(`nodeofactor.High_Resource.1`))) +
+  stat_smooth(method = "lm", fullrange = FALSE,se=FALSE) 
+  #stat_smooth(method = "loess", fullrange = FALSE,se=FALSE,lty=2)
 
-
-
-
-
-library(intergraph)
-
-temp = eprobs_m2a %>% group_by(nodecov.Page_Rank_Prior,nodefactor.High_Resource.1,phase) %>% select(nodecov.Page_Rank_Prior,nodefactor.High_Resource.1,phase,t,probability)
-temp$phase = as.factor(temp$phase)
-temp$phase = fct_relevel(temp$phase,c('Planning/scoping','Application/development','Review','Implementation'))
-temp = temp[!duplicated(temp),]
-
-ggplot(temp,aes(x=nodecov.Page_Rank_Prior,y=probability,
-                colour=as.factor(nodefactor.High_Resource.1))) +
-  geom_point(pch=21) + scale_color_colorblind(name = 'Tie involving..',labels=c("0 high resource actors",
-                                                                                '1 high resource actor',
-                                                                                '2 high resource actors'))+ 
-  stat_smooth(fullrange = FALSE) + facet_wrap(~phase,scales = 'free_x')+theme_tufte(ticks=F) + 
-  scale_y_continuous(name = 'Predicted value',limits=c(0,1)) + scale_x_continuous(name = 'Prior centrality score') +
-  theme(legend.position =c(0.8,0.15),strip.text=element_text(size=18),
-        axis.text = element_text(size=16),axis.title = element_text(size=18),
-        legend.text=element_text(size=14),legend.title=element_text(size=16)) 
-
-
-
-temp = eprobs_m2a %>% filter(t %in% seq(5,25,5))
-
-gdata::ll(unit='MB')
-head(eprobs_m2a)
-test = eprobs_m2a %>% filter(t %in% c(10)) %>%
-  dplyr::select(nodecov.Core_Rank_Prior,nodefactor.High_Resource.1, nodecov.Core_Rank_Prior_x_High_Resource,t,probability) %>%
-  group_by(nodecov.Core_Rank_Prior,nodefactor.High_Resource.1, nodecov.Core_Rank_Prior_x_High_Resource,t) %>% 
-  summarise(avg_prob = mean(probability))
-
-ggplot(test %>% arrange(nodecov.Core_Rank_Prior),aes(x=nodecov.Core_Rank_Prior,y=avg_prob,
-                                                     linetype=as.factor(nodecov.High_Resource))) + geom_line() +
-  stat_smooth()
+gp + scale_x_continuous(name = "Prior centrality (page rank)") + scale_y_continuous(name = "Probability")+
+  #ggtitle("Prior centrality conditional on organizational resources")  + 
+  scale_color_colorblind(name = 'Organization (sender)',labels=c('Low resource',"High resource")) + 
+  theme_bw() + 
+ # scale_linetype_manual(name='fit',labels=c('lm','Loess'))+
+  theme(legend.position = c(0.8,0.2),axis.text=element_text(size=18), 
+        axis.title = element_text(size=18),legend.title=element_text(size=18),
+        legend.text=element_text(size=18))
 
 
 gg2 = ggplot(full_results%>% filter(grepl('m2$',model),!grepl('Edges',term)),
@@ -315,94 +289,7 @@ gg5 = ggplot(full_results%>% filter(grepl('m5',model),!grepl('Edges',term)),
 gg5
 
 
-test = btergm(net_list[-1] ~ edges + mutual + isolates + nodecov("Meetings_Attended") + 
-                gwidegree(gwid_decay, fixed = T) + gwesp(gwesp_decay, fixed = T) + 
-                timecov(transform = function(t) t) + 
-                timecov(transform = function(t) t^2) + 
-                timecov(transform = function(t) t^3) + 
-                nodeofactor("Mandatory") + 
-                edgecov(utility_list_odegree) + timecov(utility_list_odegree, 
-                                                        transform = function(t) t),R=100)
-summary(test)
-library(broom)
-broom::tidy(full_mod_1)
-summary(m5)
-test = btergm(form5,R=100,returndata = T)
-
-test = btergm(net_list[-1] ~  mutual + isolates + nodecov("Meetings_Attended") + 
-                gwidegree(gwid_decay, fixed = T) + gwesp(gwesp_decay, fixed = T) + 
-                nodeofactor("Mandatory") + edgecov(utility_list_odegree) +
-                timecov(maximum = 7,transform=function(t) 1) + 
-                timecov(minimum = 8,maximum = 10, transform = function(t) 1) +
-                timecov(minimum = 11,maximum = 18, transform = function(t) 1) +
-                timecov(minimum = 19, transform = function(t) 1),R=100,returndata=F)
-
-test2 = btergm(net_list[-1] ~  edges + mutual + isolates + nodecov("Meetings_Attended") + 
-                 gwidegree(gwid_decay, fixed = T) + gwesp(gwesp_decay, fixed = T) + 
-                 nodeofactor("Mandatory") + edgecov(utility_list_odegree) +
-                 timecov(minimum = 8,maximum = 10, transform = function(t) 1) +
-                 timecov(minimum = 11,maximum = 18, transform = function(t) 1) +
-                 timecov(minimum = 19, transform = function(t) 1)
-               
-               
-               ,R=100,returndata=F)
-
-
-test@boot$t = test@boot$t[rowSums(is.na(test@boot$t))==0,]
-test@boot$R = nrow(test@boot$t)
-test2@boot$t = test2@boot$t[rowSums(is.na(test2@boot$t))==0,]
-test2@boot$R = nrow(test2@boot$t)
-summary(test)
-summary(test2)
-screenreg(list(test,test2))
-
-plotreg(test)
-head(test)
-glm(Y~.-1,test,family='binomial')
-
-
-warnings()
-
-edgecov(utility_list_odegree) + timecov(x = utility_list_odegree, 
-                                        minimum = 8, transform = function(t) 1),R=100)
-
-summary(test)
-timecov(x = utility_list_odegree, minimum = 11, maximum = 18, transform = function(t) 1) + 
-  timecov(x = utility_list_odegree, minimum = 19, transform = function(t) 1)
-
-table(test$`edgecov.utility_list_odegree[[i]]`)
-table(test$`edgecov.timecov2.utility_list_odegree[[i]]`)
-table(test$`edgecov.timecov3.utility_list_odegree[[i]]`)
-table(test$`edgecov.utility_list_odegree[[i]]`,test$`edgecov.timecov3.utility_list_odegree[[i]]`)
-test$`edgecov.timecov3.utility_list_odegree[[i]]`)
-
-
-summary(restricted_results[[1]])
-
-lapply(restricted_results,summary)
-gwd_
-
-
-
-coef(full_mod_2)
-summary(full_mod_2)
 
 
 
 
-summary(full_mod_2)
-
-
-
-unlist(gwesp_runif_results)
-unlist(gwod_runif_results)
-unlist(gwid_runif_results)
-length(gwd_sim_summary_1)
-
-unlist(gwd_sim_summary_1
-       
-       
-       
-       
-       
-       
