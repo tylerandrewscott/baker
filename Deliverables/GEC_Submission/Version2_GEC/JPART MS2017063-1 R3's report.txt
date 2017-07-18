@@ -1,0 +1,57 @@
+This paper is well written and structured in a clear way. It uses sophisticated methods and can be considered a state-of-the-art application of temporal exponential random graph models combined with text analysis to an environmental planning and implementation process. The broad topic of the paper is interesting, but it is unclear if the paper is able to come up with solid hypotheses that really matter for environmental planning. In short, it is uncertain what the value of the hypotheses is and how the findings can be generalized to other cases. If the authors are able to come up with a more solid theoretical micro-foundation for the model they estimate and if they can talk more about the generalizability of this, it can be a great paper. As it stands, its main advantages are the innovative state-of-the-art analysis and the clear way in which the paper is written up, and the weakness is the lack of theoretical motivation and generalizability.
+
+More specifically, the authors argue that central organizations have more ties (which is tautological) in H2. After all, this means testing if having a central position in the network (operationalized through Pagerank) leads to a more central position in the network (operationalized through degree centrality as per the nodecov model terms). They further introduce a one-period temporal lag in modeling centrality as a predictor of ties, which makes the model term resemble the autoregressive predictor. This is not just a statistical problem, but reveals weak theory as far as H2 is concerned. Also, where is the pagerank model term to be found in the results figures?
+
+In H1, the authors argue that "utility and mandatory authority orgs will be central nodes." This is not exactly a counter-intuitive or theoretically appealing hypothesis. It will contribute only incrementally to what we know about planning processes. We already know this from other ERGM-based policy network and implementation network studies.
+
+H3 to H5 are considerably more interesting than H1 to H2b. I would probably relabel H1 to H2a as control variables because they have little theoretical appeal.
+
+H3 to H5 hypothesize about the dynamics and the stability of the network across the different stages of the policy planning and implementation process. This is interesting. However, if the authors focus on these hypotheses, they should say more explicitly if this pattern can be expected in other cases as well and how it generalizes to policy planning and implementation more generally. Why should practitioners or policy analysts care, and are they able to learn something from this? Are the temporal patterns presumably applicable in other cases or contexts?
+
+I would also encourage the authors to think more explicitly about a micro-foundation of H3 to H5. Why would a single actor or a dyad of two actors be interested in more or less stability or collaboration at each respective stage?
+
+I also have a number of more technical comments of minor importance:
+
+Page 11: what does it mean when a network evolves "organically"?
+
+Hypothesis 4 seems to be introduced quite ad hoc. A better theoretical basis would be helpful.
+
+Page 20: justify the use of Pagerank over other centrality measures.
+
+Page 22 (table): The operationalization of H2a doesn't fully match the text of the hypothesis on the left. While the text states "low-resource orgs or have less technical expertise", the operationalization uses "organization type" instead (thus discarding the either-or distinction). Why?
+
+It is unclear whether the memory term in H3 and H4 is an autoregressive term or a dyadic stability term. The description seems to mix up both.
+
+Since the "time" trend is zero and insignificant, it can be removed from the model. It should be correlated with the "post-planning" or "implementation" term anyway if the theory holds, so including it may even be harmful. Perhaps omitting the time trend will even make the post-planning model term in Figure 5 or the implementation model term in Figure 6 significant.
+
+Page 27: "These are available upon request." -> Would it be possible to include them in the replication archive?
+
+Is it possible to include a robustness check for different sizes of the time window? E.g., what happens if it is changed from six months to three or nine months?
+
+What is the advantage of a parametric approach (the TERGM) over descriptive time series plots (similar to Figure 2)?
+
+Is it possible to also include a series of cross-sectional ERGMs (including the dyadic stability term) for each of the six-month periods and plot the time series of coefficients for the theoretically interesting model terms, including confidence regions? This should provide a more visual approach to the interesting quantities in addition to the full-fledged TERGM. See Cranmer, Heinrich and Desmarais (2014) in Social Networks for a similar approach.
+
+I don't see the cubic time trend mentioned at the end of page 32 in any of the figures.
+
+I think the 158 percent mentioned on page 37 may be wrong. I think this should be 58 percent more likely because we are talking about odds ratios. Same goes for the other odds ratios mentioned in the results section.
+
+The title of the paper seems a bit misleading. It's not primarily about "measurement." Perhaps rather do something like "Temporal participation dynamics in collaborative water planning network meetings" or something like that?
+
+Since the authors are doing automated text analysis using predefined verbs: is it possible to classify the relationships into positive and negative? Or otherwise partition the interactions into multiple categories? This may permit a theoretically more appealing statistical modeling of interaction patterns like structural balance etc. This would be compatible with the literature on forms of deliberation, policy debates etc. Perhaps in future research?
+
+It would be instructive to show a time series of the amount of nodal composition change over time. I.e., what is the number of participants involved in both t-1 and t over the number of participants involved in either t-1 or t, at each time point?
+
+The discussion/conclusion section talks a lot about power, but the notion of power is notably absent in the theory section in the beginning.
+
+Page 43: "neither hypothesis was supported, as we did not observe a shift toward a more stable network either in the move from planning/scoping to application development nor from application review to license implementation. As one of the first quantitative longitudinal studies of a governance network, this is a critical finding." -> The fact that a hypothesis does not turn out to be significant, means that it cannot be confirmed. However, it does not refute it either because it might possibly become significant with more observations (e.g., by pooling a hundred similar cases). Therefore insignificance is not a critical finding as the conclusion is uncertain.
+
+Page 45: "Future research will be able to build upon this framework to test more nuanced theories." -> I doubt many planning processes are so well documented.
+
+We cannot be sure how similar or different this kind of text-generated network is compared with specific kinds of survey questions or other types of network data. What kind of survey question would presumably come closest to the network relation examined here?
+
+The appendices should be consistently referenced in the main text.
+
+For Figure C1, the authors should consider a log transformation of the y axis. E.g., the plot.gof method in the btergm package contains an argument that can be specified as transform = log1p in order to make smaller nuances more easily visible.
+
+Figure C2: There is a "joint" argument in the rocpr statistic for the gof function in the most recent version of the btergm package. If used, this will produce one single, joint PR curve for all time steps. This could be used to show three curves for the different model (i.e., one curve per model rather than 16 curves for a single model).

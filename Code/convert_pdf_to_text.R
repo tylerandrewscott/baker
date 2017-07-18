@@ -36,7 +36,7 @@ readPDF2<-function (engine = c("xpdf", "Rpoppler", "ghostscript", "Rcampdf","cus
 }
 
 
-file_list = grep('\\.pdf$',list.files('input/pdfs/clean/'),value=T)
+file_list = grep('\\.pdf$',list.files('Input/pdfs/clean/'),value=T)
 prefix = 'Input/pdfs/clean/'
 save_loc = 'Input/pdfs/text/'
 

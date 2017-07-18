@@ -90,3 +90,7 @@ nlp_special
 nlp_special/.*
 Scratch
 Scratch/.*
+Icon
+Icon?
+/Icon
+/Icon?
