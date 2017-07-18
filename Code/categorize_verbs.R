@@ -3,6 +3,7 @@ library(plyr)
 library(dplyr)
 library(stringr)
 getwd()
+
 isit<-read.csv(file.path("Input","pdfs","extraction","named_entities.csv"))
 isit$rowid<-1:nrow(isit)
 my_db <- dplyr::src_sqlite("../sqlite-31.db", create = F)
